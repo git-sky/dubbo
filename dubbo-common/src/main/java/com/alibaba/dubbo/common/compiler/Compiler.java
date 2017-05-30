@@ -15,13 +15,25 @@
  */
 package com.alibaba.dubbo.common.compiler;
 
-
 import com.alibaba.dubbo.common.extension.SPI;
 
 /**
+ * 
+ * <pre>
  * Compiler. (SPI, Singleton, ThreadSafe)
  * 
  * @author william.liangf
+ * 
+ * 
+ *       
+ * 
+ * SPI注解表示如果没有配置，dubbo默认选用javassist编译源代码。     
+ * 
+ * 接口方法compile第一个入参code，就是java的源代码。
+ * 
+ * 接口方法compile第二个入参classLoader，按理是类加载器用来加载编译后的字节码，其实没用到，都是根据当前线程或者调用方的classLoader加载的。
+ * 
+ * </pre>
  */
 @SPI("javassist")
 public interface Compiler {
@@ -29,8 +41,10 @@ public interface Compiler {
 	/**
 	 * Compile java source code.
 	 * 
-	 * @param code Java source code
-	 * @param classLoader TODO
+	 * @param code
+	 *            Java source code
+	 * @param classLoader
+	 *            TODO
 	 * @return Compiled class
 	 */
 	Class<?> compile(String code, ClassLoader classLoader);
