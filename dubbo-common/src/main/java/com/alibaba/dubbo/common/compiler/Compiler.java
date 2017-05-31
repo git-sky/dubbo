@@ -27,7 +27,7 @@ import com.alibaba.dubbo.common.extension.SPI;
  * 
  *       
  * 
- * SPI注解表示如果没有配置，dubbo默认选用javassist编译源代码。     
+ * SPI注解表示如果没有配置，dubbo默认选用javassist编译源代码。     (javassist=com.alibaba.dubbo.common.compiler.support.JavassistCompiler)
  * 
  * 接口方法compile第一个入参code，就是java的源代码。
  * 
