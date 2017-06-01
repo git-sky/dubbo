@@ -58,6 +58,9 @@ public class RoundRobinLoadBalance extends AbstractLoadBalance {
 		}
 	}
 
+	/**
+	 * 轮询算法，从invokers中选择一个invoker。
+	 */
 	protected <T> Invoker<T> doSelect(List<Invoker<T>> invokers, URL url, Invocation invocation) {
 		String key = invokers.get(0).getUrl().getServiceKey() + "." + invocation.getMethodName();
 		int length = invokers.size(); // 总个数

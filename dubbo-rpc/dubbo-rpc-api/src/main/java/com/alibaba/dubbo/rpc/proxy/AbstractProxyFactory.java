@@ -29,26 +29,27 @@ import com.alibaba.dubbo.rpc.service.EchoService;
  */
 public abstract class AbstractProxyFactory implements ProxyFactory {
 
-    public <T> T getProxy(Invoker<T> invoker) throws RpcException {
-        Class<?>[] interfaces = null;
-        String config = invoker.getUrl().getParameter("interfaces");
-        if (config != null && config.length() > 0) {
-            String[] types = Constants.COMMA_SPLIT_PATTERN.split(config);
-            if (types != null && types.length > 0) {
-                interfaces = new Class<?>[types.length + 2];
-                interfaces[0] = invoker.getInterface();
-                interfaces[1] = EchoService.class;
-                for (int i = 0; i < types.length; i ++) {
-                    interfaces[i + 1] = ReflectUtils.forName(types[i]);
-                }
-            }
-        }
-        if (interfaces == null) {
-            interfaces = new Class<?>[] {invoker.getInterface(), EchoService.class};
-        }
-        return getProxy(invoker, interfaces);
-    }
-    
-    public abstract <T> T getProxy(Invoker<T> invoker, Class<?>[] types);
+	public <T> T getProxy(Invoker<T> invoker) throws RpcException {
+		// 获取接口列表放入到interfaces中
+		Class<?>[] interfaces = null;
+		String config = invoker.getUrl().getParameter("interfaces");
+		if (config != null && config.length() > 0) {
+			String[] types = Constants.COMMA_SPLIT_PATTERN.split(config);
+			if (types != null && types.length > 0) {
+				interfaces = new Class<?>[types.length + 2];
+				interfaces[0] = invoker.getInterface();
+				interfaces[1] = EchoService.class;
+				for (int i = 0; i < types.length; i++) {
+					interfaces[i + 1] = ReflectUtils.forName(types[i]);
+				}
+			}
+		}
+		if (interfaces == null) {// 如果没有接口，则使用回声测试
+			interfaces = new Class<?>[] { invoker.getInterface(), EchoService.class };
+		}
+		return getProxy(invoker, interfaces);
+	}
+
+	public abstract <T> T getProxy(Invoker<T> invoker, Class<?>[] types);
 
 }
