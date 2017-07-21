@@ -35,74 +35,89 @@ import com.alibaba.dubbo.rpc.RpcException;
  */
 public class ProtocolFilterWrapper implements Protocol {
 
-    private final Protocol protocol;
+	private final Protocol protocol;
 
-    public ProtocolFilterWrapper(Protocol protocol){
-        if (protocol == null) {
-            throw new IllegalArgumentException("protocol == null");
-        }
-        this.protocol = protocol;
-    }
+	public ProtocolFilterWrapper(Protocol protocol) {
+		if (protocol == null) {
+			throw new IllegalArgumentException("protocol == null");
+		}
+		this.protocol = protocol;
+	}
 
-    public int getDefaultPort() {
-        return protocol.getDefaultPort();
-    }
+	public int getDefaultPort() {
+		return protocol.getDefaultPort();
+	}
 
-    public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
-        if (Constants.REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
-            return protocol.export(invoker);
-        }
-        return protocol.export(buildInvokerChain(invoker, Constants.SERVICE_FILTER_KEY, Constants.PROVIDER));
-    }
+	public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
+		if (Constants.REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
+			// protocol-->com.alibaba.dubbo.rpc.protocol.ProtocolListenerWrapper@43e3cae(com.alibaba.dubbo.registry.integration.RegistryProtocol@5602c43c)
+			return protocol.export(invoker);
+		}
+		// protocol-->com.alibaba.dubbo.rpc.protocol.ProtocolListenerWrapper@5367839e(com.alibaba.dubbo.rpc.protocol.dubbo.DubboProtocol@35799785)
+		return protocol.export(buildInvokerChain(invoker, Constants.SERVICE_FILTER_KEY, Constants.PROVIDER));
+	}
 
-    public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
-        if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
-            return protocol.refer(type, url);
-        }
-        return buildInvokerChain(protocol.refer(type, url), Constants.REFERENCE_FILTER_KEY, Constants.CONSUMER);
-    }
+	public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
+		if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
+			//protocol-->com.alibaba.dubbo.registry.integration.RegistryProtocol@99a6a17
+			return protocol.refer(type, url);
+		}
+		//protocol-->com.alibaba.dubbo.rpc.protocol.dubbo.DubboProtocol@5b2ef33
+		return buildInvokerChain(protocol.refer(type, url), Constants.REFERENCE_FILTER_KEY, Constants.CONSUMER);
+	}
 
-    public void destroy() {
-        protocol.destroy();
-    }
+	public void destroy() {
+		protocol.destroy();
+	}
 
-    private static <T> Invoker<T> buildInvokerChain(final Invoker<T> invoker, String key, String group) {
-        Invoker<T> last = invoker;
-        List<Filter> filters = ExtensionLoader.getExtensionLoader(Filter.class).getActivateExtension(invoker.getUrl(), key, group);
-        if (filters.size() > 0) {
-            for (int i = filters.size() - 1; i >= 0; i --) {
-                final Filter filter = filters.get(i);
-                final Invoker<T> next = last;
-                last = new Invoker<T>() {
+	/**
+	 * filter链
+	 */
+	private static <T> Invoker<T> buildInvokerChain(final Invoker<T> invoker, String key, String group) {
+		Invoker<T> last = invoker;
+		// [com.alibaba.dubbo.rpc.filter.EchoFilter@1d52db16,
+		// com.alibaba.dubbo.rpc.filter.ClassLoaderFilter@2aad9064,
+		// com.alibaba.dubbo.rpc.filter.GenericFilter@68e2ab1f,
+		// com.alibaba.dubbo.rpc.filter.ContextFilter@7950b604,
+		// com.alibaba.dubbo.rpc.protocol.dubbo.filter.TraceFilter@21ddfed5,
+		// com.alibaba.dubbo.monitor.support.MonitorFilter@75856351,
+		// com.alibaba.dubbo.rpc.filter.TimeoutFilter@83b971e,
+		// com.alibaba.dubbo.rpc.filter.ExceptionFilter@3e36cb]
+		List<Filter> filters = ExtensionLoader.getExtensionLoader(Filter.class).getActivateExtension(invoker.getUrl(), key, group);
+		if (filters.size() > 0) {
+			for (int i = filters.size() - 1; i >= 0; i--) {// filters设置为调用链条
+				final Filter filter = filters.get(i);
+				final Invoker<T> next = last;
+				last = new Invoker<T>() {
 
-                    public Class<T> getInterface() {
-                        return invoker.getInterface();
-                    }
+					public Class<T> getInterface() {
+						return invoker.getInterface();
+					}
 
-                    public URL getUrl() {
-                        return invoker.getUrl();
-                    }
+					public URL getUrl() {
+						return invoker.getUrl();
+					}
 
-                    public boolean isAvailable() {
-                        return invoker.isAvailable();
-                    }
+					public boolean isAvailable() {
+						return invoker.isAvailable();
+					}
 
-                    public Result invoke(Invocation invocation) throws RpcException {
-                        return filter.invoke(next, invocation);
-                    }
+					public Result invoke(Invocation invocation) throws RpcException {
+						return filter.invoke(next, invocation);
+					}
 
-                    public void destroy() {
-                        invoker.destroy();
-                    }
+					public void destroy() {
+						invoker.destroy();
+					}
 
-                    @Override
-                    public String toString() {
-                        return invoker.toString();
-                    }
-                };
-            }
-        }
-        return last;
-    }
-    
+					@Override
+					public String toString() {
+						return invoker.toString();
+					}
+				};
+			}
+		}
+		return last;
+	}
+
 }

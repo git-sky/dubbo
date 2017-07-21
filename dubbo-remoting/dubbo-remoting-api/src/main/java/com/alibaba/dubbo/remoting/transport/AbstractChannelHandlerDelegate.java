@@ -14,6 +14,7 @@ public abstract class AbstractChannelHandlerDelegate implements ChannelHandlerDe
 
     protected AbstractChannelHandlerDelegate(ChannelHandler handler) {
         Assert.notNull(handler, "handler == null");
+        //com.alibaba.dubbo.remoting.exchange.support.header.HeaderExchangeHandler@10198cc
         this.handler = handler;
     }
 

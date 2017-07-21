@@ -26,15 +26,20 @@ import com.alibaba.dubbo.remoting.zookeeper.ZookeeperTransporter;
  * @author william.liangf
  */
 public class ZookeeperRegistryFactory extends AbstractRegistryFactory {
-	
+
 	private ZookeeperTransporter zookeeperTransporter;
 
-    public void setZookeeperTransporter(ZookeeperTransporter zookeeperTransporter) {
+	public void setZookeeperTransporter(ZookeeperTransporter zookeeperTransporter) {
 		this.zookeeperTransporter = zookeeperTransporter;
 	}
 
+	/**
+	 * 连接到zookeeper注册中心,并返回注册实例。
+	 */
 	public Registry createRegistry(URL url) {
-        return new ZookeeperRegistry(url, zookeeperTransporter);
-    }
+		//url(provider) --> zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_provider&dubbo=2.0.0&interface=com.alibaba.dubbo.registry.RegistryService&pid=68260&timestamp=1496905025327
+		//url(consumer) --> zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_consumer&dubbo=2.0.0&interface=com.alibaba.dubbo.registry.RegistryService&pid=42708&timestamp=1497097421948
+		return new ZookeeperRegistry(url, zookeeperTransporter);
+	}
 
 }

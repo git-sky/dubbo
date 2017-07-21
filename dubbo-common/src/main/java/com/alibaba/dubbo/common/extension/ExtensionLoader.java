@@ -514,6 +514,9 @@ public class ExtensionLoader<T> {
 				EXTENSION_INSTANCES.putIfAbsent(clazz, (T) clazz.newInstance());
 				instance = (T) EXTENSION_INSTANCES.get(clazz);
 			}
+			// instance-->com.alibaba.dubbo.common.extension.factory.SpiExtensionFactory@41dd3f8a
+			// instance-->com.alibaba.dubbo.config.spring.extension.SpringExtensionFactory@2767522b
+			// instance-->com.alibaba.dubbo.common.compiler.support.JavassistCompiler@4ee89ac7
 			injectExtension(instance);
 			Set<Class<?>> wrapperClasses = cachedWrapperClasses;
 			if (wrapperClasses != null && wrapperClasses.size() > 0) {
@@ -606,12 +609,29 @@ public class ExtensionLoader<T> {
 		}
 
 		Map<String, Class<?>> extensionClasses = new HashMap<String, Class<?>>();
+		// {spi=class com.alibaba.dubbo.common.extension.factory.SpiExtensionFactory, spring=class
+		// com.alibaba.dubbo.config.spring.extension.SpringExtensionFactory}
+		// {dubbo=class com.alibaba.dubbo.rpc.protocol.dubbo.DubboProtocol, injvm=class
+		// com.alibaba.dubbo.rpc.protocol.injvm.InjvmProtocol, redis=class
+		// com.alibaba.dubbo.rpc.protocol.redis.RedisProtocol, mock=class
+		// com.alibaba.dubbo.rpc.support.MockProtocol, http=class
+		// com.alibaba.dubbo.rpc.protocol.http.HttpProtocol, thrift=class
+		// com.alibaba.dubbo.rpc.protocol.thrift.ThriftProtocol, hessian=class
+		// com.alibaba.dubbo.rpc.protocol.hessian.HessianProtocol, registry=class
+		// com.alibaba.dubbo.registry.integration.RegistryProtocol, webservice=class
+		// com.alibaba.dubbo.rpc.protocol.webservice.WebServiceProtocol, rmi=class
+		// com.alibaba.dubbo.rpc.protocol.rmi.RmiProtocol}
+		// {javassist=class com.alibaba.dubbo.common.compiler.support.JavassistCompiler, jdk=class
+		// com.alibaba.dubbo.common.compiler.support.JdkCompiler}
 		loadFile(extensionClasses, DUBBO_INTERNAL_DIRECTORY);
 		loadFile(extensionClasses, DUBBO_DIRECTORY);
 		loadFile(extensionClasses, SERVICES_DIRECTORY);
 		return extensionClasses;
 	}
 
+	/**
+	 * 读取配置文件中定义的扩展点.
+	 */
 	private void loadFile(Map<String, Class<?>> extensionClasses, String dir) {
 		String fileName = dir + type.getName();
 		try {
@@ -639,25 +659,31 @@ public class ExtensionLoader<T> {
 										String name = null;
 										int i = line.indexOf('=');
 										if (i > 0) {
+											/**
+											 * 例如：filter=com.alibaba.dubbo.rpc.protocol.
+											 * ProtocolFilterWrapper name:filter
+											 * line:com.alibaba.dubbo
+											 * .rpc.protocol.ProtocolFilterWrapper
+											 */
 											name = line.substring(0, i).trim();
 											line = line.substring(i + 1).trim();
 										}
 										if (line.length() > 0) {
 											Class<?> clazz = Class.forName(line, true, classLoader);
 											if (!type.isAssignableFrom(clazz)) {
-												throw new IllegalStateException("Error when load extension class(interface: " + type + ", class line: " + clazz.getName()
-														+ "), class " + clazz.getName() + "is not subtype of interface.");
+												throw new IllegalStateException("Error when load extension class(interface: " + type + ", class line: " + clazz.getName() + "), class "
+														+ clazz.getName() + "is not subtype of interface.");
 											}
 											if (clazz.isAnnotationPresent(Adaptive.class)) {
 												if (cachedAdaptiveClass == null) {
 													cachedAdaptiveClass = clazz;
 												} else if (!cachedAdaptiveClass.equals(clazz)) {
-													throw new IllegalStateException("More than 1 adaptive class found: " + cachedAdaptiveClass.getClass().getName() + ", "
-															+ clazz.getClass().getName());
+													throw new IllegalStateException("More than 1 adaptive class found: " + cachedAdaptiveClass.getClass().getName() + ", " + clazz.getClass().getName());
 												}
 											} else {
 												try {
-													clazz.getConstructor(type);
+													clazz.getConstructor(type);// SKY_COMMENT
+																				// 这句话会判断：配置文件中定义的扩展点实现是否包含一个带有当前类型的构造方法。
 													Set<Class<?>> wrappers = cachedWrapperClasses;
 													if (wrappers == null) {
 														cachedWrapperClasses = new ConcurrentHashSet<Class<?>>();
@@ -669,10 +695,8 @@ public class ExtensionLoader<T> {
 													if (name == null || name.length() == 0) {
 														name = findAnnotationName(clazz);
 														if (name == null || name.length() == 0) {
-															if (clazz.getSimpleName().length() > type.getSimpleName().length()
-																	&& clazz.getSimpleName().endsWith(type.getSimpleName())) {
-																name = clazz.getSimpleName().substring(0, clazz.getSimpleName().length() - type.getSimpleName().length())
-																		.toLowerCase();
+															if (clazz.getSimpleName().length() > type.getSimpleName().length() && clazz.getSimpleName().endsWith(type.getSimpleName())) {
+																name = clazz.getSimpleName().substring(0, clazz.getSimpleName().length() - type.getSimpleName().length()).toLowerCase();
 															} else {
 																throw new IllegalStateException("No such extension name for the class " + clazz.getName() + " in the config " + url);
 															}
@@ -692,8 +716,8 @@ public class ExtensionLoader<T> {
 															if (c == null) {
 																extensionClasses.put(n, clazz);
 															} else if (c != clazz) {
-																throw new IllegalStateException("Duplicate extension " + type.getName() + " name " + n + " on " + c.getName()
-																		+ " and " + clazz.getName());
+																throw new IllegalStateException("Duplicate extension " + type.getName() + " name " + n + " on " + c.getName() + " and "
+																		+ clazz.getName());
 															}
 														}
 													}
@@ -701,8 +725,8 @@ public class ExtensionLoader<T> {
 											}
 										}
 									} catch (Throwable t) {
-										IllegalStateException e = new IllegalStateException("Failed to load extension class(interface: " + type + ", class line: " + line + ") in "
-												+ url + ", cause: " + t.getMessage(), t);
+										IllegalStateException e = new IllegalStateException("Failed to load extension class(interface: " + type + ", class line: " + line + ") in " + url + ", cause: "
+												+ t.getMessage(), t);
 										exceptions.put(line, e);
 									}
 								}
@@ -744,6 +768,8 @@ public class ExtensionLoader<T> {
 
 	private Class<?> getAdaptiveExtensionClass() {
 		getExtensionClasses();
+		// cachedAdaptiveClass-->
+		// com.alibaba.dubbo.common.extension.factory.AdaptiveExtensionFactory
 		if (cachedAdaptiveClass != null) {
 			return cachedAdaptiveClass;
 		}
@@ -751,8 +777,52 @@ public class ExtensionLoader<T> {
 	}
 
 	private Class<?> createAdaptiveExtensionClass() {
+		/**
+		 * <pre>
+		 * 
+		 * package com.alibaba.dubbo.rpc;
+		 * 
+		 * import com.alibaba.dubbo.common.extension.ExtensionLoader;
+		 * 
+		 * public class Protocol$Adpative implements com.alibaba.dubbo.rpc.Protocol {
+		 * 	public void destroy() {
+		 * 		throw new UnsupportedOperationException(&quot;method public abstract void com.alibaba.dubbo.rpc.Protocol.destroy() of interface com.alibaba.dubbo.rpc.Protocol is not adaptive method!&quot;);
+		 * 	}
+		 * 
+		 * 	public int getDefaultPort() {
+		 * 		throw new UnsupportedOperationException(&quot;method public abstract int com.alibaba.dubbo.rpc.Protocol.getDefaultPort() of interface com.alibaba.dubbo.rpc.Protocol is not adaptive method!&quot;);
+		 * 	}
+		 * 
+		 * 	public com.alibaba.dubbo.rpc.Invoker refer(java.lang.Class arg0, com.alibaba.dubbo.common.URL arg1) throws com.alibaba.dubbo.rpc.RpcException {
+		 * 		if (arg1 == null)
+		 * 			throw new IllegalArgumentException(&quot;url == null&quot;);
+		 * 		com.alibaba.dubbo.common.URL url = arg1;
+		 * 		String extName = (url.getProtocol() == null ? &quot;dubbo&quot; : url.getProtocol());
+		 * 		if (extName == null)
+		 * 			throw new IllegalStateException(&quot;Fail to get extension(com.alibaba.dubbo.rpc.Protocol) name from url(&quot; + url.toString() + &quot;) use keys([protocol])&quot;);
+		 * 		com.alibaba.dubbo.rpc.Protocol extension = (com.alibaba.dubbo.rpc.Protocol) ExtensionLoader.getExtensionLoader(com.alibaba.dubbo.rpc.Protocol.class).getExtension(extName);
+		 * 		return extension.refer(arg0, arg1);
+		 * 	}
+		 * 
+		 * 	public com.alibaba.dubbo.rpc.Exporter export(com.alibaba.dubbo.rpc.Invoker arg0) throws com.alibaba.dubbo.rpc.RpcException {
+		 * 		if (arg0 == null)
+		 * 			throw new IllegalArgumentException(&quot;com.alibaba.dubbo.rpc.Invoker argument == null&quot;);
+		 * 		if (arg0.getUrl() == null)
+		 * 			throw new IllegalArgumentException(&quot;com.alibaba.dubbo.rpc.Invoker argument getUrl() == null&quot;);
+		 * 		com.alibaba.dubbo.common.URL url = arg0.getUrl();
+		 * 		String extName = (url.getProtocol() == null ? &quot;dubbo&quot; : url.getProtocol());
+		 * 		if (extName == null)
+		 * 			throw new IllegalStateException(&quot;Fail to get extension(com.alibaba.dubbo.rpc.Protocol) name from url(&quot; + url.toString() + &quot;) use keys([protocol])&quot;);
+		 * 		com.alibaba.dubbo.rpc.Protocol extension = (com.alibaba.dubbo.rpc.Protocol) ExtensionLoader.getExtensionLoader(com.alibaba.dubbo.rpc.Protocol.class).getExtension(extName);
+		 * 		return extension.export(arg0);
+		 * 	}
+		 * }
+		 * 
+		 * </pre>
+		 */
 		String code = createAdaptiveExtensionClassCode();
 		ClassLoader classLoader = findClassLoader();
+		//compiler-->com.alibaba.dubbo.common.compiler.support.AdaptiveCompiler@acc4ce9
 		com.alibaba.dubbo.common.compiler.Compiler compiler = ExtensionLoader.getExtensionLoader(com.alibaba.dubbo.common.compiler.Compiler.class).getAdaptiveExtension();
 		return compiler.compile(code, classLoader);
 	}
@@ -783,8 +853,7 @@ public class ExtensionLoader<T> {
 			Adaptive adaptiveAnnotation = method.getAnnotation(Adaptive.class);
 			StringBuilder code = new StringBuilder(512);
 			if (adaptiveAnnotation == null) {
-				code.append("throw new UnsupportedOperationException(\"method ").append(method.toString()).append(" of interface ").append(type.getName())
-						.append(" is not adaptive method!\");");
+				code.append("throw new UnsupportedOperationException(\"method ").append(method.toString()).append(" of interface ").append(type.getName()).append(" is not adaptive method!\");");
 			} else {
 				int urlTypeIndex = -1;
 				for (int i = 0; i < pts.length; ++i) {
@@ -811,8 +880,8 @@ public class ExtensionLoader<T> {
 						Method[] ms = pts[i].getMethods();
 						for (Method m : ms) {
 							String name = m.getName();
-							if ((name.startsWith("get") || name.length() > 3) && Modifier.isPublic(m.getModifiers()) && !Modifier.isStatic(m.getModifiers())
-									&& m.getParameterTypes().length == 0 && m.getReturnType() == URL.class) {
+							if ((name.startsWith("get") || name.length() > 3) && Modifier.isPublic(m.getModifiers()) && !Modifier.isStatic(m.getModifiers()) && m.getParameterTypes().length == 0
+									&& m.getReturnType() == URL.class) {
 								urlTypeIndex = i;
 								attribMethod = name;
 								break LBL_PTS;
@@ -820,15 +889,15 @@ public class ExtensionLoader<T> {
 						}
 					}
 					if (attribMethod == null) {
-						throw new IllegalStateException("fail to create adative class for interface " + type.getName()
-								+ ": not found url parameter or url attribute in parameters of method " + method.getName());
+						throw new IllegalStateException("fail to create adative class for interface " + type.getName() + ": not found url parameter or url attribute in parameters of method "
+								+ method.getName());
 					}
 
 					// Null point check
 					String s = String.format("\nif (arg%d == null) throw new IllegalArgumentException(\"%s argument == null\");", urlTypeIndex, pts[urlTypeIndex].getName());
 					code.append(s);
-					s = String.format("\nif (arg%d.%s() == null) throw new IllegalArgumentException(\"%s argument %s() == null\");", urlTypeIndex, attribMethod,
-							pts[urlTypeIndex].getName(), attribMethod);
+					s = String.format("\nif (arg%d.%s() == null) throw new IllegalArgumentException(\"%s argument %s() == null\");", urlTypeIndex, attribMethod, pts[urlTypeIndex].getName(),
+							attribMethod);
 					code.append(s);
 
 					s = String.format("%s url = arg%d.%s();", URL.class.getName(), urlTypeIndex, attribMethod);
@@ -899,13 +968,11 @@ public class ExtensionLoader<T> {
 				}
 				code.append("\nString extName = ").append(getNameCode).append(";");
 				// check extName == null?
-				String s = String.format("\nif(extName == null) "
-						+ "throw new IllegalStateException(\"Fail to get extension(%s) name from url(\" + url.toString() + \") use keys(%s)\");", type.getName(),
-						Arrays.toString(value));
+				String s = String.format("\nif(extName == null) " + "throw new IllegalStateException(\"Fail to get extension(%s) name from url(\" + url.toString() + \") use keys(%s)\");",
+						type.getName(), Arrays.toString(value));
 				code.append(s);
 
-				s = String.format("\n%s extension = (%<s)%s.getExtensionLoader(%s.class).getExtension(extName);", type.getName(), ExtensionLoader.class.getSimpleName(),
-						type.getName());
+				s = String.format("\n%s extension = (%<s)%s.getExtensionLoader(%s.class).getExtension(extName);", type.getName(), ExtensionLoader.class.getSimpleName(), type.getName());
 				code.append(s);
 
 				// return statement

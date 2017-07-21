@@ -179,6 +179,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 			interfaceClass = GenericService.class;
 		} else {
 			try {
+				//interface cn.com.sky.dubbo.server.service.DemoService
 				interfaceClass = Class.forName(interfaceName, true, Thread.currentThread().getContextClassLoader());
 			} catch (ClassNotFoundException e) {
 				throw new IllegalStateException(e.getMessage(), e);
@@ -350,7 +351,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 	@SuppressWarnings({ "unchecked", "rawtypes", "deprecation" })
 	private T createProxy(Map<String, String> map) {
 		// 1、 判断是否使用本地引用
-		URL tmpUrl = new URL("temp", "localhost", 0, map);
+		URL tmpUrl = new URL("temp", "localhost", 0, map);// temp://localhost?application=consumer-of-helloworld-app&check=false&dubbo=2.0.0&interface=cn.com.sky.dubbo.server.service.DemoService&loadbalance=random&methods=addUser,getUserById,sayHello&mock=true&pid=6840&retries=5&revision=1.0.0&side=consumer&timeout=15000&timestamp=1496908850617&version=1.0.0
 		final boolean isJvmRefer;
 		if (isInjvm() == null) {
 			if (url != null && url.length() > 0) { // 指定URL的情况下，不做本地引用
@@ -389,6 +390,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 					}
 				}
 			} else { // 通过注册中心配置拼装URL
+				// us -->[registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_consumer&dubbo=2.0.0&pid=48320&registry=zookeeper&timestamp=1497094184777]
 				List<URL> us = loadRegistries(false);
 				if (us != null && us.size() > 0) {
 					for (URL u : us) {
@@ -406,6 +408,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 			}
 
 			// 3、 根据url获取invoker
+			// urls --> [registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_consumer&dubbo=2.0.0&pid=48320&refer=application%3Dhello_consumer%26check%3Dfalse%26dubbo%3D2.0.0%26interface%3Dcn.com.sky.dubbo.server.service.DemoService%26loadbalance%3Drandom%26methods%3DgetUserById%2CaddUser%2CsayHello%26mock%3Dtrue%26pid%3D48320%26retries%3D5%26revision%3D1.0.0%26side%3Dconsumer%26timeout%3D15000%26timestamp%3D1497094162302%26version%3D1.0.0&registry=zookeeper&timestamp=1497094184777]
 			if (urls.size() == 1) {
 				invoker = refprotocol.refer(interfaceClass, urls.get(0));// 单个invoker
 			} else {
@@ -444,6 +447,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 			logger.info("Refer dubbo service " + interfaceClass.getName() + " from url " + invoker.getUrl());
 		}
 		// 5、创建服务代理
+		//invoker-->MockClusterInvoker(FailoverClusterInvoker,RegistryDirectory)
 		return (T) proxyFactory.getProxy(invoker);
 	}
 

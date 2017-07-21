@@ -43,6 +43,7 @@ public class AdaptiveCompiler implements Compiler {
         } else {
             compiler = loader.getDefaultExtension();
         }
+        //compiler-->com.alibaba.dubbo.common.compiler.support.JavassistCompiler@4ee89ac7
         return compiler.compile(code, classLoader);
     }
 

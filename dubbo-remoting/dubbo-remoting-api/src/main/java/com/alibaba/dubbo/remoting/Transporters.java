@@ -32,6 +32,9 @@ public class Transporters {
 		return bind(URL.valueOf(url), handler);
 	}
 
+	/**
+	 * 生产这bind
+	 */
 	public static Server bind(URL url, ChannelHandler... handlers) throws RemotingException {
 		if (url == null) {
 			throw new IllegalArgumentException("url == null");
@@ -41,10 +44,13 @@ public class Transporters {
 		}
 		ChannelHandler handler;
 		if (handlers.length == 1) {
+			//com.alibaba.dubbo.remoting.transport.DecodeHandler@1083899
 			handler = handlers[0];
 		} else {
 			handler = new ChannelHandlerDispatcher(handlers);
 		}
+		//getTransporter()获取一个Adaptive的Transporter
+	    //然后调用bind方法（默认是NettyTransporter的bind方法）
 		return getTransporter().bind(url, handler);
 	}
 

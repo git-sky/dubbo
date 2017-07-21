@@ -80,6 +80,7 @@ final class LazyConnectExchangeClient implements ExchangeClient {
 		try {
 			if (client != null)
 				return;
+			//url-->dubbo://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_consumer&callbacks=10000&check=false&codec=dubbo&connect.timeout=10000&dubbo=2.0.0&heartbeat=60000&interface=com.alibaba.dubbo.registry.RegistryService&lazy=true&methods=register,subscribe,unregister,unsubscribe,lookup&pid=48320&reconnect=false&send.reconnect=true&sticky=true&subscribe.1.callback=true&timeout=10000&timestamp=1497094184777&unsubscribe.1.callback=false
 			this.client = Exchangers.connect(url, requestHandler);
 		} finally {
 			connectLock.unlock();

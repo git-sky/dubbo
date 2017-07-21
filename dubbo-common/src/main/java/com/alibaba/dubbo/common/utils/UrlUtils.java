@@ -132,8 +132,8 @@ public class UrlUtils {
             return null; //here won't be empty
         }
         List<URL> registries = new ArrayList<URL>();
-        for (String addr : addresses) {
-            registries.add(parseURL(addr, defaults));
+        for (String addr : addresses) {//[zookeeper://127.0.0.1:2181]
+            registries.add(parseURL(addr, defaults));//[zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_provider&dubbo=2.0.0&pid=58636&timestamp=1496895795633]
         }
         return registries;
     }

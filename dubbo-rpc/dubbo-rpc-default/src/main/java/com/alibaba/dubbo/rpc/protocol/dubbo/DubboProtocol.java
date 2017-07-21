@@ -229,12 +229,29 @@ public class DubboProtocol extends AbstractProtocol {
 		return DEFAULT_PORT;
 	}
 
+	/**
+	 * 生产者，导出服务 (InvokerDelegete)
+	 * 
+	 * 消费者，？
+	 */
 	public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
-		URL url = invoker.getUrl();
+		//url(provider) --> dubbo://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=65388&revision=1.0.0&side=provider&timestamp=1496900761500&version=1.0.0
+		//url(consumer) --> dubbo://192.168.2.9:57104/com.alibaba.dubbo.registry.NotifyListener.33885664?application=hello_consumer&callbacks=10000&check=false&connect.timeout=10000&dubbo=2.0.0&interface=com.alibaba.dubbo.registry.NotifyListener&is_callback_service=true&isserver=false&lazy=true&methods=notify&pid=48320&reconnect=false&sticky=true&subscribe.1.callback=true&timeout=10000&timestamp=1497094184777&unsubscribe.1.callback=false
+		URL url = invoker.getUrl();// provider url
 
 		// export service.
-		String key = serviceKey(url);
+		// key由serviceName，port，version，group组成
+		// 当nio客户端发起远程调用时，nio服务端通过此key来决定调用哪个Exporter，也就是执行的Invoker。
+		// key(provider) --> cn.com.sky.dubbo.server.service.DemoService:1.0.0:20880
+		// key(consumer) --> com.alibaba.dubbo.registry.NotifyListener.33885664:57104
+		String key = serviceKey(url);// url->key
+
+		// 将Invoker转换成Exporter
+		// invoker（provider） --> com.alibaba.dubbo.registry.integration.RegistryProtocol$InvokerDelegete@120b2cbc
 		DubboExporter<T> exporter = new DubboExporter<T>(invoker, key, exporterMap);
+		// 缓存要暴露的服务，key是上面生成的
+		//exporter(provider)--> com.alibaba.dubbo.registry.integration.RegistryProtocol$InvokerDelegete@120b2cbc
+		//exporter(consumer)-->
 		exporterMap.put(key, exporter);
 
 		// export an stub service for dispaching event
@@ -251,22 +268,36 @@ public class DubboProtocol extends AbstractProtocol {
 				stubServiceMethodsMap.put(url.getServiceKey(), stubServiceMethods);
 			}
 		}
-
+		// 根据URL绑定IP与端口，建立NIO框架的Server
+		// url(provider)--> dubbo://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=137728&revision=1.0.0&side=provider&timestamp=1496992201705&version=1.0.0
+		// url(consumer)-->dubbo://192.168.2.9:57104/com.alibaba.dubbo.registry.NotifyListener.33885664?application=hello_consumer&callbacks=10000&check=false&connect.timeout=10000&dubbo=2.0.0&interface=com.alibaba.dubbo.registry.NotifyListener&is_callback_service=true&isserver=false&lazy=true&methods=notify&pid=48320&reconnect=false&sticky=true&subscribe.1.callback=true&timeout=10000&timestamp=1497094184777&unsubscribe.1.callback=false
 		openServer(url);
 
 		return exporter;
 	}
 
+	/**
+	 * <pre>
+	 * 同一个JVM中相同协议的服务共享同一个Server，不同服务中只有accept、idleTimeout、threads、heartbeat参数的变化会引用Server中属性的变化，
+	 * 但同JVM中同协议的服务均是引用同一个Server，第一个服务暴露是创建Server，其他服务的暴露是Server最多只是重置个别参数。 
+	 * 
+	 * 一般情况下，同JVM同协议下的服务共享同一个Server，且消费端的引用这些服务的也可共享一个Client，从而实现多个服务共享同一个通道进行通信，且是基于长连接下，减少了通信的握手次数，高效率通信。
+	 */
 	private void openServer(URL url) {
 		// find server.
+		// key是IP:PORT;10.69.61.196:20880,10.69.61.196:60007
 		String key = url.getAddress();
 		// client 也可以暴露一个只有server可以调用的服务。
 		boolean isServer = url.getParameter(Constants.IS_SERVER_KEY, true);
 		if (isServer) {
 			ExchangeServer server = serverMap.get(key);
+			// 同协议的服务，第一个暴露服务的时候创建server
 			if (server == null) {
+				//key -->  10.69.61.196:20880
+				//url -->  dubbo://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=68088&revision=1.0.0&side=provider&timestamp=1496903104502&version=1.0.0
 				serverMap.put(key, createServer(url));
 			} else {
+				// 同协议的服务后来暴露服务的则使用第一次创建的同一Server
 				// server支持reset,配合override功能使用
 				server.reset(url);
 			}
@@ -286,6 +317,11 @@ public class DubboProtocol extends AbstractProtocol {
 		url = url.addParameter(Constants.CODEC_KEY, Version.isCompatibleVersion() ? COMPATIBLE_CODEC_NAME : DubboCodec.NAME);
 		ExchangeServer server;
 		try {
+			// Exchangers是门面类，里面封装的是Exchanger的逻辑。
+			// Exchanger默认只有一个实现HeaderExchanger.
+			// Exchanger负责数据交换和网络通信。
+			// 从Protocol进入Exchanger，标志着程序进入了remote层。
+			//url ---> dubbo://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&channel.readonly.sent=true&codec=dubbo&dubbo=2.0.0&generic=false&heartbeat=60000&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=68088&revision=1.0.0&side=provider&timestamp=1496903104502&version=1.0.0
 			server = Exchangers.bind(url, requestHandler);
 		} catch (RemotingException e) {
 			throw new RpcException("Fail to start server(url: " + url + ") " + e.getMessage(), e);
@@ -305,6 +341,8 @@ public class DubboProtocol extends AbstractProtocol {
 	 */
 	public <T> Invoker<T> refer(Class<T> serviceType, URL url) throws RpcException {
 		// create rpc invoker.
+		//url-->dubbo://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_consumer&callbacks=10000&check=false&connect.timeout=10000&dubbo=2.0.0&interface=com.alibaba.dubbo.registry.RegistryService&lazy=true&methods=register,subscribe,unregister,unsubscribe,lookup&pid=48320&reconnect=false&sticky=true&subscribe.1.callback=true&timeout=10000&timestamp=1497094184777&unsubscribe.1.callback=false
+		//url-->dubbo://192.168.2.9:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_consumer&check=false&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&loadbalance=random&methods=addUser,getUserById,sayHello&mock=true&pid=44364&retries=5&revision=1.0.0&scope=remote&side=consumer&timeout=1500000&timestamp=1497097889171&version=1.0.0
 		DubboInvoker<T> invoker = new DubboInvoker<T>(serviceType, url, getClients(url), invokers);
 		invokers.add(invoker);
 		return invoker;

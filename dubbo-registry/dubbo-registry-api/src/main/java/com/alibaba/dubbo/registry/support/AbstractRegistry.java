@@ -424,6 +424,7 @@ public abstract class AbstractRegistry implements Registry {
         Map<String, List<URL>> result = new HashMap<String, List<URL>>();
         for (URL u : urls) {
             if (UrlUtils.isMatch(url, u)) {
+            	//category-->configurators
             	String category = u.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY);
             	List<URL> categoryList = result.get(category);
             	if (categoryList == null) {
@@ -446,6 +447,8 @@ public abstract class AbstractRegistry implements Registry {
             List<URL> categoryList = entry.getValue();
             categoryNotified.put(category, categoryList);
             saveProperties(url);
+            //listener-->com.alibaba.dubbo.registry.integration.RegistryProtocol$OverrideListener@5eebd82d
+            //categoryList-->[empty://192.168.2.9:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&category=configurators&check=false&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=44312&revision=1.0.0&scope=remote&side=provider&timestamp=1497090442680&version=1.0.0]
             listener.notify(categoryList);
         }
     }

@@ -99,7 +99,9 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
         }
         return proxy;
     }
-    
+    /**
+     * StubProxyFactoryWrapper-> JavassistProxyFactory
+     */
     public <T> Invoker<T> getInvoker(T proxy, Class<T> type, URL url) throws RpcException {
         return proxyFactory.getInvoker(proxy, type, url);
     }

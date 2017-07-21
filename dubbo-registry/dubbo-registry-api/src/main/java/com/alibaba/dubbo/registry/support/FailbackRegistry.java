@@ -126,7 +126,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         failedRegistered.remove(url);
         failedUnregistered.remove(url);
         try {
-            // 向服务器端发送注册请求
+            // 向服务器端发送注册请求 (provider/consumer --> 注册中心)
             doRegister(url);
         } catch (Exception e) {
             Throwable t = e;
@@ -186,7 +186,9 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         removeFailedSubscribed(url, listener);
         try {
             // 向服务器端发送订阅请求
-            doSubscribe(url, listener);
+        	// url(provider) --> provider://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&category=configurators&check=false&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=68260&revision=1.0.0&side=provider&timestamp=1496905026515&version=1.0.0
+            // url(consumer) --> consumer://192.168.2.9/cn.com.sky.dubbo.server.service.DemoService?application=hello_consumer&category=providers,configurators,routers&check=false&dubbo=2.0.0&interface=cn.com.sky.dubbo.server.service.DemoService&loadbalance=random&methods=addUser,getUserById,sayHello&mock=true&pid=44364&retries=5&revision=1.0.0&side=consumer&timeout=1500000&timestamp=1497097889171&version=1.0.0
+        	doSubscribe(url, listener);
         } catch (Exception e) {
             Throwable t = e;
 

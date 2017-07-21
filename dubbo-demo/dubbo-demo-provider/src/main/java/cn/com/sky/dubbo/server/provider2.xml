@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:dubbo="http://code.alibabatech.com/schema/dubbo" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:jee="http://www.springframework.org/schema/jee"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="
+	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+	http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+	http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd 
+	http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.5.xsd
+		http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-2.5.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-2.5.xsd">
+
+
+	<!-- 提供方应用信息，用于计算依赖关系 -->
+	<dubbo:application name="hello_provider" />
+
+	<!-- 使用zookeeper注册中心暴露服务地址 -->
+	<dubbo:registry id="providerZK" address="zookeeper://127.0.0.1:2181" />
+
+	<!-- 用dubbo协议在20880端口暴露服务 -->
+	<dubbo:protocol name="dubbo" port="20880" />
+
+	<!-- <dubbo:protocol name="rmi" port="1099" /> -->
+
+	<!-- <dubbo:protocol name="hessian" port="8080" server="jetty" /> -->
+
+
+	<!-- <dubbo:protocol name="http" port="8080" /> -->
+
+
+	<!-- <dubbo:protocol name="thrift" port="3030" /> -->
+
+
+
+	<!-- 声明需要暴露的服务接口 -->
+	<dubbo:service interface="cn.com.sky.dubbo.server.service.DemoService"
+		ref="demoService" registry="providerZK" version="1.0.0" scope="remote" />
+
+	<!-- 具体的实现bean -->
+	<bean id="demoService" class="cn.com.sky.dubbo.server.service.impl.DemoServiceImpl" />
+
+	<!-- 通知 -->
+	<bean id="myAdvice" class="cn.com.sky.dubbo.server.MyAdvice" />
+
+	<!-- NameMatchMethodPointcut 仅可以方法名称匹配 -->
+	<bean id="myPointcut" class="org.springframework.aop.support.NameMatchMethodPointcut">
+		<property name="mappedNames">
+			<list>
+				<value>query</value>
+			</list>
+		</property>
+	</bean>
+
+	<!-- proxy-target-class:基于接口还是基于类的代理 -->
+	<aop:config proxy-target-class="false">
+
+		<!-- <aop:pointcut expression="" id="" /> <aop:advisor advice-ref="" /> 
+			<aop:aspect></aop:aspect> -->
+
+
+
+		<aop:aspect id="myAspect" ref="myAdvice" order="4">
+			<!-- 本aspect有效 -->
+			<aop:pointcut id="myPrivatePointcut"
+				expression="execution(* com.alibaba.dubbo..*..*(..))" />
+
+			<aop:before pointcut-ref="myPrivatePointcut" method="doBefore2" />
+			<aop:before pointcut-ref="myPrivatePointcut" method="doBefore" />
+
+			<aop:after-returning pointcut-ref="myPrivatePointcut"
+				method="doAfterReturning" />
+			<aop:after-returning pointcut-ref="myPrivatePointcut"
+				method="doAfterReturning" returning="retValue" />
+			<!--throwing的值要与doAfterThrowing的方法参数名称相同 -->
+			<aop:after-throwing pointcut-ref="myPrivatePointcut"
+				method="doAfterThrowing" throwing="ex" />
+			<aop:after pointcut-ref="myPrivatePointcut" method="doAfter" />
+			<aop:around pointcut-ref="myPrivatePointcut" method="doAround" />
+		</aop:aspect>
+
+	</aop:config>
+
+
+</beans>

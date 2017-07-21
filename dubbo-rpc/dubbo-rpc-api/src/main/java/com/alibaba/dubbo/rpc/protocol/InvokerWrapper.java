@@ -34,6 +34,7 @@ public class InvokerWrapper<T> implements Invoker<T> {
 
     public InvokerWrapper(Invoker<T> invoker, URL url){
         this.invoker = invoker;
+        //url-->dubbo://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_consumer&callbacks=10000&check=false&connect.timeout=10000&dubbo=2.0.0&interface=com.alibaba.dubbo.registry.RegistryService&lazy=true&methods=register,subscribe,unregister,unsubscribe,lookup&pid=48320&reconnect=false&sticky=true&subscribe.1.callback=true&timeout=10000&timestamp=1497094184777&unsubscribe.1.callback=false
         this.url = url;
     }
 

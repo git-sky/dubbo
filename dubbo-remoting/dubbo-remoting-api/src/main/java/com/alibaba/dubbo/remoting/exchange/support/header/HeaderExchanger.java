@@ -30,15 +30,25 @@ import com.alibaba.dubbo.remoting.transport.DecodeHandler;
  * @author william.liangf
  */
 public class HeaderExchanger implements Exchanger {
-    
-    public static final String NAME = "header";
 
-    public ExchangeClient connect(URL url, ExchangeHandler handler) throws RemotingException {
-        return new HeaderExchangeClient(Transporters.connect(url, new DecodeHandler(new HeaderExchangeHandler(handler))));
-    }
+	public static final String NAME = "header";
 
-    public ExchangeServer bind(URL url, ExchangeHandler handler) throws RemotingException {
-        return new HeaderExchangeServer(Transporters.bind(url, new DecodeHandler(new HeaderExchangeHandler(handler))));
-    }
+	/**
+	 * 消费者connect
+	 */
+	public ExchangeClient connect(URL url, ExchangeHandler handler) throws RemotingException {
+		return new HeaderExchangeClient(Transporters.connect(url, new DecodeHandler(new HeaderExchangeHandler(handler))));
+	}
+
+	/**
+	 * 生产者bind
+	 */
+	public ExchangeServer bind(URL url, ExchangeHandler handler) throws RemotingException {
+		// 直接返回一个HeaderExchangeServer
+		// 先创建一个HeaderExchangeHandler
+		// 再创建一个DecodeHandler
+		// 最后调用Transporters.bind
+		return new HeaderExchangeServer(Transporters.bind(url, new DecodeHandler(new HeaderExchangeHandler(handler))));
+	}
 
 }

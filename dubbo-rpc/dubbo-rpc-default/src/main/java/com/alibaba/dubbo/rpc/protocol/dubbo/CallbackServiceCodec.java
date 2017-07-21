@@ -105,6 +105,7 @@ class CallbackServiceCodec {
             //同一个channel 可以有多个callback instance. 不同的instance不重新export
             if( ! channel.hasAttribute(cacheKey)){
                 if (!isInstancesOverLimit(channel, url, clazz.getName(), instid, false)) {
+                	//exporturl-->dubbo://192.168.2.9:57104/com.alibaba.dubbo.registry.NotifyListener.33885664?application=hello_consumer&callbacks=10000&check=false&connect.timeout=10000&dubbo=2.0.0&interface=com.alibaba.dubbo.registry.NotifyListener&is_callback_service=true&isserver=false&lazy=true&methods=notify&pid=48320&reconnect=false&sticky=true&subscribe.1.callback=true&timeout=10000&timestamp=1497094184777&unsubscribe.1.callback=false
                     Invoker<?> invoker = proxyFactory.getInvoker(inst, clazz, exporturl);
                     //资源销毁？
                     Exporter<?> exporter = protocol.export(invoker);

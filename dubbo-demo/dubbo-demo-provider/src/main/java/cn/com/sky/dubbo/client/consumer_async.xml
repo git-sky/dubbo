@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans        http://www.springframework.org/schema/beans/spring-beans.xsd        http://code.alibabatech.com/schema/dubbo        http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+
+	<!-- 消费方应用名，用于计算依赖关系，不是匹配条件，不要与提供方一样 -->
+	<dubbo:application name="consumer-of-helloworld-app" />
+
+	<!-- <dubbo:consumer check="false" filter="logSessionFilter" /> -->
+
+	<!-- 用dubbo协议在20880端口暴露服务 -->
+	<dubbo:protocol name="dubbo" port="20880" />
+
+	<!-- <dubbo:protocol name="rmi" port="1099" /> -->
+
+	<!-- <dubbo:protocol name="hessian" port="8080" server="jetty" /> -->
+	
+<!-- 	<dubbo:protocol name="http" port="8080" /> -->
+
+
+	<!-- <dubbo:registry id="central" address="zookeeper://127.0.0.1:2181" protocol="zookeeper" 
+		/> -->
+
+	<!-- Zookeeper单机配置 -->
+	<dubbo:registry id="central" address="zookeeper://127.0.0.1:2181" />
+	<!-- <dubbo:registry id="central" protocol="zookeeper" address="127.0.0.1:2181" 
+		/> -->
+
+	<!-- Zookeeper集群配置 -->
+	<!-- <dubbo:registry protocol="zookeeper" address="127.0.0.1:2181,127.0.0.2:2181,127.0.0.3:2181" 
+		/> <dubbo:registry address="zookeeper://127.0.0.1:2181?backup=127.0.0.2:2181,127.0.0.3:2181" 
+		/> -->
+
+
+	<!-- 生成远程服务代理，可以和本地bean一样使用demoService -->
+	<dubbo:reference id="demoService"
+		interface="cn.com.sky.dubbo.server.service.DemoService" version="1.0.0"
+		loadbalance="random" timeout="15000" check="false" registry="central"
+		retries="5" async="true"/>
+
+
+	<bean id="helloAction" class="cn.com.sky.dubbo.client.service.HelloAction"> <!-- 和本地服务一样使用远程服务 -->
+		<property name="demoService" ref="demoService" />
+	</bean>
+
+
+
+
+
+</beans>

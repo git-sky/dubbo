@@ -33,6 +33,13 @@ public abstract class AbstractZookeeperClient<TargetChildListener> implements Zo
 		return url;
 	}
 
+	/**
+	 * path ---> /dubbo/cn.com.sky.dubbo.server.service.DemoService/providers/dubbo%3A%2F%2F10.69.61.196%3A20880%2Fcn.com.sky.dubbo.server.service.DemoService%3Fanyhost%3Dtrue%26application%3Dhello_provider%26dubbo%3D2.0.0%26generic%3Dfalse%26interface%3Dcn.com.sky.dubbo.server.service.DemoService%26methods%3DaddUser%2CgetUserById%2CsayHello%26pid%3D68260%26revision%3D1.0.0%26side%3Dprovider%26timestamp%3D1496905026515%26version%3D1.0.0
+	 * --> /dubbo/cn.com.sky.dubbo.server.service.DemoService/providers
+	 * --> /dubbo/cn.com.sky.dubbo.server.service.DemoService
+	 * --> /dubbo
+	 * ephemeral --> true
+	 */
 	public void create(String path, boolean ephemeral) {
 		int i = path.lastIndexOf('/');
 		if (i > 0) {

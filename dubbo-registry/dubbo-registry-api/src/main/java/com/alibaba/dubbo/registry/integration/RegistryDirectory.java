@@ -130,6 +130,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     
     public void subscribe(URL url) {
         setConsumerUrl(url);
+        //url-->consumer://192.168.2.9/cn.com.sky.dubbo.server.service.DemoService?application=hello_consumer&category=providers,configurators,routers&check=false&dubbo=2.0.0&interface=cn.com.sky.dubbo.server.service.DemoService&loadbalance=random&methods=addUser,getUserById,sayHello&mock=true&pid=44364&retries=5&revision=1.0.0&side=consumer&timeout=1500000&timestamp=1497097889171&version=1.0.0
         registry.subscribe(url, this);
     }
 
@@ -192,6 +193,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             }
         }
         // providers
+        //invokerUrls-->[dubbo://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_consumer&callbacks=10000&connect.timeout=10000&dubbo=2.0.0&interface=com.alibaba.dubbo.registry.RegistryService&lazy=true&methods=register,subscribe,unregister,unsubscribe,lookup&pid=48320&reconnect=false&sticky=true&subscribe.1.callback=true&timeout=10000&timestamp=1497094184777&unsubscribe.1.callback=false]
         refreshInvoker(invokerUrls);
     }
     
@@ -285,6 +287,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         if (urls == null || urls.size() == 0){
             return configurators;
         }
+        //[empty://192.168.2.9:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&category=configurators&check=false&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=44312&revision=1.0.0&scope=remote&side=provider&timestamp=1497090442680&version=1.0.0]
         for(URL url : urls){
             if (Constants.EMPTY_PROTOCOL.equals(url.getProtocol())) {
                 configurators.clear();
@@ -392,6 +395,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 		enabled = url.getParameter(Constants.ENABLED_KEY, true);
                 	}
                 	if (enabled) {
+                		//protocol-->
                 		invoker = new InvokerDelegete<T>(protocol.refer(serviceType, url), url, providerUrl);
                 	}
                 } catch (Throwable t) {
@@ -450,6 +454,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     private List<Invoker<T>> route(List<Invoker<T>> invokers, String method) {
         Invocation invocation = new RpcInvocation(method, new Class<?>[0], new Object[0]);
+        //routers-->[com.alibaba.dubbo.rpc.cluster.router.MockInvokersSelector@517be4c1]
         List<Router> routers = getRouters(); 
         if (routers != null) {
             for (Router router : routers) {

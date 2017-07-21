@@ -27,6 +27,8 @@ import com.alibaba.dubbo.rpc.RpcResult;
 /**
  * InvokerWrapper
  * 
+ * AbstractProxyInvoker，服务提供者使用
+ * 
  * @author william.liangf
  */
 public abstract class AbstractProxyInvoker<T> implements Invoker<T> {

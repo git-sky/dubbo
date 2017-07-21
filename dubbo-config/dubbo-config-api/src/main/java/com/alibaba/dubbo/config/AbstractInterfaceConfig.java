@@ -101,6 +101,9 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 	// 服务暴露或引用的scope,如果为local，则表示只在当前JVM内查找.
 	private String scope;
 
+	/**
+	 * checkRegistry如果xml中没有配置注册中心，从dubbo.properties中读取配置，构建RegistryConfig对象并赋值
+	 */
 	protected void checkRegistry() {
 		// 兼容旧版本
 		if (registries == null || registries.size() == 0) {
@@ -155,10 +158,15 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 
 	/**
 	 * 获取url列表
+	 * 
+	 * @param provider
+	 *            是否是服务提供者
 	 */
 	protected List<URL> loadRegistries(boolean provider) {
 		checkRegistry();
 		List<URL> registryList = new ArrayList<URL>();
+		//[<dubbo:registry address="zookeeper://127.0.0.1:2181" id="providerZK" />]
+		//[<dubbo:registry address="zookeeper://127.0.0.1:2181" id="consumerZK" />]
 		if (registries != null && registries.size() > 0) {
 			for (RegistryConfig config : registries) {
 				String address = config.getAddress();
@@ -187,9 +195,13 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 						}
 					}
 					List<URL> urls = UrlUtils.parseURLs(address, map);
+					// urls -->  [zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_provider&dubbo=2.0.0&pid=58636&timestamp=1496895795633]
+					//           [zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_consumer&dubbo=2.0.0&pid=48320&timestamp=1497094184777]
 					for (URL url : urls) {
 						url = url.addParameter(Constants.REGISTRY_KEY, url.getProtocol());
 						url = url.setProtocol(Constants.REGISTRY_PROTOCOL);
+						//url--> registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_provider&dubbo=2.0.0&pid=58636&registry=zookeeper&timestamp=1496895795633
+						//       registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_consumer&dubbo=2.0.0&pid=48320&registry=zookeeper&timestamp=1497094184777
 						if ((provider && url.getParameter(Constants.REGISTER_KEY, true)) || (!provider && url.getParameter(Constants.SUBSCRIBE_KEY, true))) {
 							registryList.add(url);
 						}
