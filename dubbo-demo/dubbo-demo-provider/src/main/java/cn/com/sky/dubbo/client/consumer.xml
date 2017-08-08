@@ -41,12 +41,12 @@
 	<!--配置mock="true"，同时mock实现接口，接口名要注意命名规范：接口名+Mock后缀。此时如果调用失败会调用Mock实现。mock实现需要保证有无参的构造方法。 -->
 	<dubbo:reference id="demoService" interface="cn.com.sky.dubbo.server.service.DemoService" 
 		version="1.0.0" loadbalance="random" timeout="1500000" check="false" registry="consumerZK" 
-		retries="5" mock="true" />
+		retries="5" />
 
 
-	<bean id="helloAction" class="cn.com.sky.dubbo.client.service.HelloAction"> <!-- 和本地服务一样使用远程服务 -->
+<!-- 	<bean id="helloAction" class="cn.com.sky.dubbo.client.service.HelloAction"> 和本地服务一样使用远程服务
 		<property name="demoService" ref="demoService" />
-	</bean>
+	</bean> -->
 
 
 

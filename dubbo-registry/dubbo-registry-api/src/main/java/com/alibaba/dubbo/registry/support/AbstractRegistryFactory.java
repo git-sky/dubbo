@@ -78,7 +78,7 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
             LOCK.unlock();
         }
     }
-
+  //连接到注册中心，并返回连接实例。
     public Registry getRegistry(URL url) {
     	url = url.setPath(RegistryService.class.getName())
     			.addParameter(Constants.INTERFACE_KEY, RegistryService.class.getName())

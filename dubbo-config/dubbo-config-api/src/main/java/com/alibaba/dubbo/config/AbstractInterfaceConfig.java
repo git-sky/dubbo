@@ -157,7 +157,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 	}
 
 	/**
-	 * 获取url列表
+	 * 获取注册中心的url列表
 	 * 
 	 * @param provider
 	 *            是否是服务提供者
@@ -211,7 +211,9 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 		}
 		return registryList;
 	}
-
+	/**
+	 * 获取监控中心的url
+	 */
 	protected URL loadMonitor(URL registryURL) {
 		if (monitor == null) {
 			String monitorAddress = ConfigUtils.getProperty("dubbo.monitor.address");

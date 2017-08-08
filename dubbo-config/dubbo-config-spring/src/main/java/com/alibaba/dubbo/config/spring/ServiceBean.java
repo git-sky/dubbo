@@ -122,6 +122,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
 
     @SuppressWarnings({ "unchecked", "deprecation" })
 	public void afterPropertiesSet() throws Exception {
+    	//1、获取配置
         if (getProvider() == null) {
             Map<String, ProviderConfig> providerConfigMap = applicationContext == null ? null  : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ProviderConfig.class, false, false);
             if (providerConfigMap != null && providerConfigMap.size() > 0) {
@@ -246,6 +247,8 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                 setPath(beanName);
             }
         }
+        
+        //2、暴露服务
         if (! isDelay()) {
             export();
         }

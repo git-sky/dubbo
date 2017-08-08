@@ -4,8 +4,6 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import cn.com.sky.dubbo.server.service.DemoService;
 
-
-
 /**
  * 基于Schema的AOP
  */

@@ -48,7 +48,7 @@ public abstract class AbstractZookeeperClient<TargetChildListener> implements Zo
 		if (ephemeral) {
 			createEphemeral(path);
 		} else {
-			createPersistent(path);
+			createPersistent(path);// path-->/dubbo/cn.com.sky.dubbo.server.service.MyService/configurators
 		}
 	}
 
@@ -72,9 +72,11 @@ public abstract class AbstractZookeeperClient<TargetChildListener> implements Zo
 		}
 		TargetChildListener targetListener = listeners.get(listener);
 		if (targetListener == null) {
+			//1、创建子节点监听事件
 			listeners.putIfAbsent(listener, createTargetChildListener(path, listener));
 			targetListener = listeners.get(listener);
 		}
+		//2、注册事件
 		return addTargetChildListener(path, targetListener);
 	}
 

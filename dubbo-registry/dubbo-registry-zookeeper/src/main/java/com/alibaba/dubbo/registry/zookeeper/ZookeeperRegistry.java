@@ -93,6 +93,9 @@ public class ZookeeperRegistry extends FailbackRegistry {
 		}
 	}
 
+	/**
+	 * zk的dubbo节点下创建url节点（provider，consumer）。
+	 */
 	protected void doRegister(URL url) {
 		try {
 			zkClient.create(toUrlPath(url), url.getParameter(Constants.DYNAMIC_KEY, true));
@@ -144,19 +147,18 @@ public class ZookeeperRegistry extends FailbackRegistry {
 				}
 			} else {
 				List<URL> urls = new ArrayList<URL>();
+
 				/**
-				 * url -->
-				 * provider://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?
-				 * anyhost=
-				 * true&application=hello_provider&category=configurators&check=false&dubbo=2.0
-				 * .0&generic
-				 * =false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser
-				 * ,getUserById
-				 * ,sayHello&pid=68260&revision=1.0.0&side=provider&timestamp=1496905026515
-				 * &version=1.0.0 path -->
-				 * /dubbo/cn.com.sky.dubbo.server.service.DemoService/configurators
+				 * <pre>
+				 * 为每一个路径添加监听事件。
+				 * 
+				 * url -->provider://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&category=configurators&check=false&dubbo=2.0.0&generic =false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=68260&revision=1.0.0&side=provider&timestamp=1496905026515&version=1.0.0
+				 * path -->/dubbo/cn.com.sky.dubbo.server.service.DemoService/configurators
+				 * 
+				 * 这里toCategoriesPath(url)返回的是一个该服务下routers等zk路径
 				 */
 				for (String path : toCategoriesPath(url)) {
+					// 1、创建节点监听事件zkListener
 					ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url);
 					if (listeners == null) {
 						zkListeners.putIfAbsent(url, new ConcurrentHashMap<NotifyListener, ChildListener>());
@@ -166,25 +168,48 @@ public class ZookeeperRegistry extends FailbackRegistry {
 					if (zkListener == null) {
 						listeners.putIfAbsent(listener, new ChildListener() {
 							public void childChanged(String parentPath, List<String> currentChilds) {
+								// 这里会监听节点的变化
 								ZookeeperRegistry.this.notify(url, listener, toUrlsWithEmpty(url, parentPath, currentChilds));
 							}
 						});
 						zkListener = listeners.get(listener);
 					}
-					//path(provider/consumer)-->dubbo/cn.com.sky.dubbo.server.service.DemoService/configurators
-					//path(consumer)-->dubbo/cn.com.sky.dubbo.server.service.DemoService/providers
-					//path(consumer)-->/dubbo/cn.com.sky.dubbo.server.service.DemoService/routers
+					// 2、创建节点path
+					// path(provider/consumer)-->dubbo/cn.com.sky.dubbo.server.service.DemoService/configurators
+					// path(consumer)-->dubbo/cn.com.sky.dubbo.server.service.DemoService/providers
+					// path(consumer)-->/dubbo/cn.com.sky.dubbo.server.service.DemoService/routers
 					zkClient.create(path, false);
+
+					// 3、注册子节点监听事件，返回子节点列表
+					// 这里会返回该zk路径下的所有数据，比如provider的话，就返回多个provider的URL
 					List<String> children = zkClient.addChildListener(path, zkListener);
+
+					// 4、将覆盖的url放入urls中
 					if (children != null) {
+						// 如果该path下的数据为空，那么返回empty://协议开头，暂时不知是何用意
+						// 注意：这里已经根据group等过滤过了
 						urls.addAll(toUrlsWithEmpty(url, path, children));
 					}
 				}
+
 				/**
 				 * <pre>
-				 * url--> provider://192.168.2.9:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&category=configurators&check=false&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=44312&revision=1.0.0&scope=remote&side=provider&timestamp=1497090442680&version=1.0.0
-				 * listener--> com.alibaba.dubbo.registry.integration.RegistryProtocol$OverrideListener@5eebd82d
-				 * urls--> [empty://192.168.2.9:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&category=configurators&check=false&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=44312&revision=1.0.0&scope=remote&side=provider&timestamp=1497090442680&version=1.0.0]
+				 * 
+				 *  5、提醒消费者可以消费了
+				 *  
+				 *  订阅之后再执行一下notify，作为初始notify，之后每一次节点有变更，都会触发notify，而notify里的逻辑就是通知RegistryDirectory这个实例的内部配置的更新。
+				 *  其中第一个url是consumer的url，而第三个参数是更新的URL列表.
+				 *  
+				 *  url(provider)--> provider://192.168.2.9:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&category=configurators&check=false&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=44312&revision=1.0.0&scope=remote&side=provider&timestamp=1497090442680&version=1.0.0
+				 *  listener(provider)--> com.alibaba.dubbo.registry.integration.RegistryProtocol$OverrideListener@5eebd82d
+				 *  urls(provider)--> [empty://192.168.2.9:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&category=configurators&check=false&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=44312&revision=1.0.0&scope=remote&side=provider&timestamp=1497090442680&version=1.0.0]
+				 * 
+				 * url(consumer)--> consumer://10.69.61.132/cn.com.sky.dubbo.server.service.DemoService?application=hello_consumer&category=providers,configurators,routers&check=false&dubbo=2.0.0&interface=cn.com.sky.dubbo.server.service.DemoService&loadbalance=random&methods=addUser,getUserById,sayHello&mock=true&pid=27604&retries=5&revision=1.0.0&side=consumer&timeout=1500000&timestamp=1501654906417&version=1.0.0
+				 * listener(consumer)-->com.alibaba.dubbo.registry.integration.RegistryDirectory@3ee4e848
+				 * urls(consumer)-->
+				 * [empty://10.69.61.132/cn.com.sky.dubbo.server.service.DemoService?application=hello_consumer&category=providers&check=false&dubbo=2.0.0&interface=cn.com.sky.dubbo.server.service.DemoService&loadbalance=random&methods=addUser,getUserById,sayHello&mock=true&pid=27604&retries=5&revision=1.0.0&side=consumer&timeout=1500000&timestamp=1501654906417&version=1.0.0, 
+				 * empty://10.69.61.132/cn.com.sky.dubbo.server.service.DemoService?application=hello_consumer&category=configurators&check=false&dubbo=2.0.0&interface=cn.com.sky.dubbo.server.service.DemoService&loadbalance=random&methods=addUser,getUserById,sayHello&mock=true&pid=27604&retries=5&revision=1.0.0&side=consumer&timeout=1500000&timestamp=1501654906417&version=1.0.0,
+				 * empty://10.69.61.132/cn.com.sky.dubbo.server.service.DemoService?application=hello_consumer&category=routers&check=false&dubbo=2.0.0&interface=cn.com.sky.dubbo.server.service.DemoService&loadbalance=random&methods=addUser,getUserById,sayHello&mock=true&pid=27604&retries=5&revision=1.0.0&side=consumer&timeout=1500000&timestamp=1501654906417&version=1.0.0]
 				 */
 				notify(url, listener, urls);
 			}
@@ -240,6 +265,10 @@ public class ZookeeperRegistry extends FailbackRegistry {
 		return toRootDir() + URL.encode(name);
 	}
 
+	// paths(provider)-->[/dubbo/cn.com.sky.dubbo.server.service.DemoService/configurators]
+	// paths(consumer)-->[/dubbo/cn.com.sky.dubbo.server.service.DemoService/providers,
+	// /dubbo/cn.com.sky.dubbo.server.service.DemoService/configurators,
+	// /dubbo/cn.com.sky.dubbo.server.service.DemoService/routers]
 	private String[] toCategoriesPath(URL url) {
 		String[] categroies;
 		if (Constants.ANY_VALUE.equals(url.getParameter(Constants.CATEGORY_KEY))) {

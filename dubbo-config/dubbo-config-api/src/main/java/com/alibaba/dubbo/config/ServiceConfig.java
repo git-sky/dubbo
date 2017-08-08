@@ -276,11 +276,14 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private void doExportUrls() {
+
 		// registryURLs -->
 		// [registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_provider&dubbo=2.0.0&pid=58636&registry=zookeeper&timestamp=1496895795633]
-		List<URL> registryURLs = loadRegistries(true);// 通过注册中心配置拼装URL
+		// 1、 通过注册中心的配置，拼装注册中心的URL
+		List<URL> registryURLs = loadRegistries(true);
+
 		// protocols --> [<dubbo:protocol name="dubbo" port="20880" id="dubbo" />]
-		// 因为dubbo支持多协议配置，遍历所有协议分别根据不同的协议把服务export到不同的注册中心上去
+		// 2、因为dubbo支持多协议配置，遍历所有协议分别根据不同的协议把服务export到不同的注册中心上去
 		for (ProtocolConfig protocolConfig : protocols) {// 获取所有的协议
 			doExportUrlsFor1Protocol(protocolConfig, registryURLs);
 		}
@@ -290,21 +293,23 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 	 * 根据协议把服务暴露到所有的注册中心上。
 	 */
 	private void doExportUrlsFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs) {
+
+		// 1、获取protocol，host，port，各类参数
 		String name = protocolConfig.getName();
 		if (name == null || name.length() == 0) {
 			name = "dubbo";// 默认dubbo协议
 		}
 
-		// 1、获取服务提供者的地址host
+		// 获取服务提供者的地址host
 		String host = protocolConfig.getHost();
 		if (provider != null && (host == null || host.length() == 0)) {
-			host = provider.getHost();
+			host = provider.getHost();// a、provider配置的直连地址
 		}
 		boolean anyhost = false;
 		if (NetUtils.isInvalidLocalHost(host)) {
 			anyhost = true;
 			try {
-				// 获取本机ip
+				// b、获取本机ip
 				host = InetAddress.getLocalHost().getHostAddress();
 			} catch (UnknownHostException e) {
 				logger.warn(e.getMessage(), e);
@@ -317,7 +322,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 							try {
 								SocketAddress addr = new InetSocketAddress(registryURL.getHost(), registryURL.getPort());
 								socket.connect(addr, 1000);
-								host = socket.getLocalAddress().getHostAddress();
+								host = socket.getLocalAddress().getHostAddress();// c、获取本地地址
 								break;
 							} finally {
 								try {
@@ -331,12 +336,12 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 					}
 				}
 				if (NetUtils.isInvalidLocalHost(host)) {
-					host = NetUtils.getLocalHost();
+					host = NetUtils.getLocalHost();// d、获取本地地址
 				}
 			}
 		}
 
-		// 2、获取服务提供者的端口号port
+		// 获取服务提供者的端口号port
 		Integer port = protocolConfig.getPort();// 20880
 		if (provider != null && (port == null || port == 0)) {
 			port = provider.getPort();
@@ -354,7 +359,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 			logger.warn("Use random available port(" + port + ") for protocol " + name);
 		}
 
-		// 3、设置各种参数
+		// 设置各种参数
 		Map<String, String> map = new HashMap<String, String>();
 		if (anyhost) {
 			map.put(Constants.ANYHOST_KEY, "true");
@@ -446,6 +451,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 				map.put("methods", StringUtils.join(new HashSet<String>(Arrays.asList(methods)), ","));
 			}
 		}
+
 		if (!ConfigUtils.isEmpty(token)) {
 			if (ConfigUtils.isDefault(token)) {
 				map.put("token", UUID.randomUUID().toString());
@@ -453,17 +459,19 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 				map.put("token", token);
 			}
 		}
+
 		if ("injvm".equals(protocolConfig.getName())) {
 			protocolConfig.setRegister(false);
 			map.put("notify", "false");
 		}
+
 		// 导出服务
 		String contextPath = protocolConfig.getContextpath();
 		if ((contextPath == null || contextPath.length() == 0) && provider != null) {
 			contextPath = provider.getContextpath();
 		}
 
-		// 4、组装服务提供者的url
+		// 2、组装服务提供者的url
 		// url -->
 		// dubbo://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=58636&revision=1.0.0&side=provider&timestamp=1496900168154&version=1.0.0
 		URL url = new URL(name, host, port, (contextPath == null || contextPath.length() == 0 ? "" : contextPath + "/") + path, map);
@@ -472,16 +480,16 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 			url = ExtensionLoader.getExtensionLoader(ConfiguratorFactory.class).getExtension(url.getProtocol()).getConfigurator(url).configure(url);
 		}
 
-		// 5、暴露服务
+		// 3、暴露服务
 		String scope = url.getParameter(Constants.SCOPE_KEY);
 		// 配置为none不暴露
 		if (!Constants.SCOPE_NONE.toString().equalsIgnoreCase(scope)) {
 
-			// 51、 配置不是remote的情况下做本地暴露 (配置为remote，则表示只暴露远程服务)
+			// 31、 配置不是remote的情况下做本地暴露 (配置为remote，则表示只暴露远程服务)
 			if (!Constants.SCOPE_REMOTE.toString().equalsIgnoreCase(scope)) {
 				exportLocal(url);// 本地暴露
 			}
-			// 52、如果配置不是local则暴露为远程服务.(配置为local，则表示只暴露本地服务)
+			// 32、如果配置不是local则暴露为远程服务.(配置为local，则表示只暴露本地服务)
 			if (!Constants.SCOPE_LOCAL.toString().equalsIgnoreCase(scope)) {
 				if (logger.isInfoEnabled()) {
 					logger.info("Export dubbo service " + interfaceClass.getName() + " to url " + url);
@@ -489,9 +497,9 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 				if (registryURLs != null && registryURLs.size() > 0 && url.getParameter("register", true)) {
 					// registryURLs -->
 					// [registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_provider&dubbo=2.0.0&pid=137728&registry=zookeeper&timestamp=1496991644290]
-					for (URL registryURL : registryURLs) {
+					for (URL registryURL : registryURLs) {// TODO a、遍历注册中心url
 						url = url.addParameterIfAbsent("dynamic", registryURL.getParameter("dynamic"));
-						URL monitorUrl = loadMonitor(registryURL);
+						URL monitorUrl = loadMonitor(registryURL);// TODO b、获取监控中心的url
 						if (monitorUrl != null) {
 							url = url.addParameterAndEncoded(Constants.MONITOR_KEY, monitorUrl.toFullString());
 						}
@@ -502,14 +510,18 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 						// registryURL -->
 						// registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_provider&dubbo=2.0.0&pid=65388&registry=zookeeper&timestamp=1496900761339
 						// purl-->registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_provider&dubbo=2.0.0&export=dubbo%3A%2F%2F192.168.2.9%3A20880%2Fcn.com.sky.dubbo.server.service.DemoService%3Fanyhost%3Dtrue%26application%3Dhello_provider%26dubbo%3D2.0.0%26generic%3Dfalse%26interface%3Dcn.com.sky.dubbo.server.service.DemoService%26methods%3DaddUser%2CgetUserById%2CsayHello%26pid%3D39920%26revision%3D1.0.0%26scope%3Dremote%26side%3Dprovider%26timestamp%3D1497086495240%26version%3D1.0.0&pid=39920&registry=zookeeper&timestamp=1497086494260
-						URL purl = registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString());
+						URL purl = registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString());// registryURL+providerURL
+
+						// TODO c、获取invoker
+						// invoker = new AbstractProxyInvoker
 						// proxyFactory --> (StubProxyFactoryWrapper->JavassistProxyFactory)
 						Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, purl);
-						// invoker = new AbstractProxyInvoker
-						// invoker -->
+
+						// TODO d、暴露服务
 						// registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_provider&dubbo=2.0.0&export=dubbo%3A%2F%2F10.69.61.196%3A20880%2Fcn.com.sky.dubbo.server.service.DemoService%3Fanyhost%3Dtrue%26application%3Dhello_provider%26dubbo%3D2.0.0%26generic%3Dfalse%26interface%3Dcn.com.sky.dubbo.server.service.DemoService%26methods%3DaddUser%2CgetUserById%2CsayHello%26pid%3D137728%26revision%3D1.0.0%26side%3Dprovider%26timestamp%3D1496992201705%26version%3D1.0.0&pid=137728&registry=zookeeper&timestamp=1496991644290
-						// protocol -->(ProtocolFilterWrapper->ProtocolListenerWrapper->RegistryProtocol)
+						// protocol-->(ProtocolFilterWrapper->ProtocolListenerWrapper->RegistryProtocol)
 						Exporter<?> exporter = protocol.export(invoker);
+
 						exporters.add(exporter);
 					}
 				} else {
@@ -517,12 +529,13 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 					Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, url);
 
 					Exporter<?> exporter = protocol.export(invoker);
+
 					exporters.add(exporter);
 				}
 			}
 		}
 		/**
-		 * 6、服务提供者的url集合
+		 * 4、服务提供者的url集合
 		 */
 		this.urls.add(url);
 	}

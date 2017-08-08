@@ -17,7 +17,7 @@ public class Provider {
 
 	public static void main(String[] args) throws Exception {
 
-		String configLocation = getPath() + "/provider2.xml";
+		String configLocation = getPath() + "/provider.xml";
 
 		final ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(configLocation);
 

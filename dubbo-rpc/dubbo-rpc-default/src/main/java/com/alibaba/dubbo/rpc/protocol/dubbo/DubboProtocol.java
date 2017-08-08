@@ -235,18 +235,19 @@ public class DubboProtocol extends AbstractProtocol {
 	 * 消费者，？
 	 */
 	public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
-		//url(provider) --> dubbo://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=65388&revision=1.0.0&side=provider&timestamp=1496900761500&version=1.0.0
+		
+		//1、url(provider) --> dubbo://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=65388&revision=1.0.0&side=provider&timestamp=1496900761500&version=1.0.0
 		//url(consumer) --> dubbo://192.168.2.9:57104/com.alibaba.dubbo.registry.NotifyListener.33885664?application=hello_consumer&callbacks=10000&check=false&connect.timeout=10000&dubbo=2.0.0&interface=com.alibaba.dubbo.registry.NotifyListener&is_callback_service=true&isserver=false&lazy=true&methods=notify&pid=48320&reconnect=false&sticky=true&subscribe.1.callback=true&timeout=10000&timestamp=1497094184777&unsubscribe.1.callback=false
 		URL url = invoker.getUrl();// provider url
 
+		// 2、当nio客户端发起远程调用时，nio服务端通过此key来决定调用哪个Exporter，也就是执行的Invoker。
 		// export service.
 		// key由serviceName，port，version，group组成
-		// 当nio客户端发起远程调用时，nio服务端通过此key来决定调用哪个Exporter，也就是执行的Invoker。
 		// key(provider) --> cn.com.sky.dubbo.server.service.DemoService:1.0.0:20880
 		// key(consumer) --> com.alibaba.dubbo.registry.NotifyListener.33885664:57104
 		String key = serviceKey(url);// url->key
 
-		// 将Invoker转换成Exporter
+		// 3、将Invoker转换成Exporter
 		// invoker（provider） --> com.alibaba.dubbo.registry.integration.RegistryProtocol$InvokerDelegete@120b2cbc
 		DubboExporter<T> exporter = new DubboExporter<T>(invoker, key, exporterMap);
 		// 缓存要暴露的服务，key是上面生成的
@@ -268,7 +269,8 @@ public class DubboProtocol extends AbstractProtocol {
 				stubServiceMethodsMap.put(url.getServiceKey(), stubServiceMethods);
 			}
 		}
-		// 根据URL绑定IP与端口，建立NIO框架的Server
+		
+		//4、 根据URL绑定IP与端口，建立NIO框架的Server
 		// url(provider)--> dubbo://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=137728&revision=1.0.0&side=provider&timestamp=1496992201705&version=1.0.0
 		// url(consumer)-->dubbo://192.168.2.9:57104/com.alibaba.dubbo.registry.NotifyListener.33885664?application=hello_consumer&callbacks=10000&check=false&connect.timeout=10000&dubbo=2.0.0&interface=com.alibaba.dubbo.registry.NotifyListener&is_callback_service=true&isserver=false&lazy=true&methods=notify&pid=48320&reconnect=false&sticky=true&subscribe.1.callback=true&timeout=10000&timestamp=1497094184777&unsubscribe.1.callback=false
 		openServer(url);

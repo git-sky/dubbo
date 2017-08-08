@@ -103,44 +103,70 @@ public class RegistryProtocol implements Protocol {
 	private final static Logger logger = LoggerFactory.getLogger(RegistryProtocol.class);
 
 	/**
-	 * 暴露服务
+	 * 暴露服务(provider)
 	 * 
 	 * 将Invoker转换成对外的Exporter，缓存起来。
 	 */
 	public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
-		// 1、 export invoker
-		// 暴露服务，这里就交给了具体的协议去暴露服务(例如DubboProtocol。nettyServer启动监听，到这里provider可以提供服务了)
-		// originInvoker-->registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_provider&dubbo=2.0.0&export=dubbo%3A%2F%2F10.69.61.196%3A20880%2Fcn.com.sky.dubbo.server.service.DemoService%3Fanyhost%3Dtrue%26application%3Dhello_provider%26dubbo%3D2.0.0%26generic%3Dfalse%26interface%3Dcn.com.sky.dubbo.server.service.DemoService%26methods%3DaddUser%2CgetUserById%2CsayHello%26pid%3D65388%26revision%3D1.0.0%26side%3Dprovider%26timestamp%3D1496900761500%26version%3D1.0.0&pid=65388&registry=zookeeper&timestamp=1496900761339
-		// com.alibaba.dubbo.registry.integration.RegistryProtocol$ExporterChangeableWrapper@5ed6b80d(com.alibaba.dubbo.rpc.listener.ListenerExporterWrapper@68a6ff9)
+
+		/**
+		 * <pre>
+		 *  1、 export invoker
+		 * 	暴露服务，这里就交给了具体的协议去暴露服务(例如DubboProtocol。nettyServer启动监听，到这里provider可以提供服务了)
+		 * originInvoker-->registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_provider&dubbo=2.0.0&export=dubbo%3A%2F%2F10.69.61.196%3A20880%2Fcn.com.sky.dubbo.server.service.DemoService%3Fanyhost%3Dtrue%26application%3Dhello_provider%26dubbo%3D2.0.0%26generic%3Dfalse%26interface%3Dcn.com.sky.dubbo.server.service.DemoService%26methods%3DaddUser%2CgetUserById%2CsayHello%26pid%3D65388%26revision%3D1.0.0%26side%3Dprovider%26timestamp%3D1496900761500%26version%3D1.0.0&pid=65388&registry=zookeeper&timestamp=1496900761339
+		 * exporter-->com.alibaba.dubbo.registry.integration.RegistryProtocol$ExporterChangeableWrapper@5ed6b80d(com.alibaba.dubbo.rpc.listener.ListenerExporterWrapper@68a6ff9)
+		 */
 		final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker);
 
-		// 2、registry provider
-		// 根据invoker中的url获取Registry实例， 并且连接到注册中心
-		// registry-->zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_provider&dubbo=2.0.0&interface=com.alibaba.dubbo.registry.RegistryService&pid=68260&timestamp=1496905025327
+		/**
+		 * <pre>
+		 * 2、registry provider
+		 * 	 根据invoker中的url获取Registry实例， 并且连接到注册中心
+		 * registry-->zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_provider&dubbo=2.0.0&interface=com.alibaba.dubbo.registry.RegistryService&pid=68260&timestamp=1496905025327
+		 */
 		final Registry registry = getRegistry(originInvoker);
-		// 3、获取将要注册到注册中心的URL
-		// registedProviderUrl-->
-		// dubbo://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=68260&revision=1.0.0&side=provider&timestamp=1496905026515&version=1.0.0
+
+		/**
+		 * <pre>
+		 * 3、获取将要注册到注册中心的URL
+		 * registedProviderUrl-->dubbo://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=68260&revision=1.0.0&side=provider&timestamp=1496905026515&version=1.0.0
+		 */
 		final URL registedProviderUrl = getRegistedProviderUrl(originInvoker);
-		// 4、调用远端注册中心的register方法进行服务注册（将 提供者的url注册到注册中心,即在dubbo节点下面创建提供者的节点）, 若有消费者订阅此服务，则推送消息让消费者引用此服务,注册中心缓存了所有提供者注册的服务以供消费者发现。
-		//registry-->FailbackRegistry
+
+		/**
+		 * <pre>
+		 * 4、调用远端注册中心的register方法进行服务注册（将 提供者的url注册到注册中心,即在dubbo节点下面创建提供者的节点）,
+		 * 	 若有消费者订阅此服务，则推送消息让消费者引用此服务,注册中心缓存了所有提供者注册的服务以供消费者发现。
+		 * registry-->FailbackRegistry
+		 */
 		registry.register(registedProviderUrl);
 
-		// 5、订阅override数据
-		// FIXME 提供者订阅时，会影响同一JVM即暴露服务，又引用同一服务的的场景，因为subscribed以服务名为缓存的key，导致订阅信息覆盖。
-		// registedProviderUrl -->
-		// dubbo://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=68260&revision=1.0.0&side=provider&timestamp=1496905026515&version=1.0.0
-		// overrideSubscribeUrl -->
-		// provider://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&category=configurators&check=false&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=68260&revision=1.0.0&side=provider&timestamp=1496905026515&version=1.0.0
+		/**
+		 * <pre>
+		 * 5、设置listener
+		 * registedProviderUrl-->dubbo://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=68260&revision=1.0.0&side=provider&timestamp=1496905026515&version=1.0.0
+		 * overrideSubscribeUrl-->provider://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&category=configurators&check=false&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=68260&revision=1.0.0&side=provider&timestamp=1496905026515&version=1.0.0
+		 */
 		final URL overrideSubscribeUrl = getSubscribedOverrideUrl(registedProviderUrl);
 		final OverrideListener overrideSubscribeListener = new OverrideListener(overrideSubscribeUrl);
 		overrideListeners.put(overrideSubscribeUrl, overrideSubscribeListener);
-		// 6、订阅服务(判断provider的url是否发生变化，如果有变化，会重新暴露服务),提供者向注册中心订阅所有注册服务的覆盖配置，当注册中心有此服务的覆盖配置注册进来时，推送消息给提供者，让它重新暴露服务，这由管理页面完成。 
+
+		/**
+		 * <pre>
+		 *  6、订阅服务(判断provider的url是否发生变化，如果有变化，会重新暴露服务),提供者向注册中心订阅所有注册服务的覆盖配置，
+		 * 当注册中心有此服务的覆盖配置注册进来时，推送消息给提供者，让它重新暴露服务，这由管理页面完成。
+		 * 
+		 * 此处逻辑很多！！！
+		 */
 		registry.subscribe(overrideSubscribeUrl, overrideSubscribeListener);
-		// 7、保证每次export都返回一个新的exporter实例
+
+		/**
+		 * <pre>
+		 * 7、保证每次export都返回一个新的exporter实例
+		 */
 		return new Exporter<T>() {
 			public Invoker<T> getInvoker() {
-				return exporter.getInvoker();
+				return exporter.getInvoker();// 返回的是：InvokerDelegete
 			}
 
 			public void unexport() {
@@ -237,7 +263,7 @@ public class RegistryProtocol implements Protocol {
 	 * @return
 	 */
 	private URL getRegistedProviderUrl(final Invoker<?> originInvoker) {
-		URL providerUrl = getProviderUrl(originInvoker);
+		URL providerUrl = getProviderUrl(originInvoker);// 提供者url
 		// 注册中心看到的地址
 		final URL registedProviderUrl = providerUrl.removeParameters(getFilteredKeys(providerUrl)).removeParameter(Constants.MONITOR_KEY);
 		return registedProviderUrl;
@@ -255,6 +281,7 @@ public class RegistryProtocol implements Protocol {
 	 */
 	private URL getProviderUrl(final Invoker<?> origininvoker) {
 		// origininvoker-->registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_provider&dubbo=2.0.0&export=dubbo%3A%2F%2F10.69.61.196%3A20880%2Fcn.com.sky.dubbo.server.service.DemoService%3Fanyhost%3Dtrue%26application%3Dhello_provider%26dubbo%3D2.0.0%26generic%3Dfalse%26interface%3Dcn.com.sky.dubbo.server.service.DemoService%26methods%3DaddUser%2CgetUserById%2CsayHello%26pid%3D65388%26revision%3D1.0.0%26side%3Dprovider%26timestamp%3D1496900761500%26version%3D1.0.0&pid=65388&registry=zookeeper&timestamp=1496900761339
+		// 提供者url：
 		// export-->dubbo://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=65388&revision=1.0.0&side=provider&timestamp=1496900761500&version=1.0.0
 		String export = origininvoker.getUrl().getParameterAndDecoded(Constants.EXPORT_KEY);
 		if (export == null || export.length() == 0) {
@@ -277,13 +304,18 @@ public class RegistryProtocol implements Protocol {
 		return key;
 	}
 
+	/**
+	 * 引用远程服务（consumer）
+	 */
 	@SuppressWarnings("unchecked")
 	public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
-		//url -->registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_consumer&dubbo=2.0.0&pid=48320&refer=application%3Dhello_consumer%26check%3Dfalse%26dubbo%3D2.0.0%26interface%3Dcn.com.sky.dubbo.server.service.DemoService%26loadbalance%3Drandom%26methods%3DgetUserById%2CaddUser%2CsayHello%26mock%3Dtrue%26pid%3D48320%26retries%3D5%26revision%3D1.0.0%26side%3Dconsumer%26timeout%3D15000%26timestamp%3D1497094162302%26version%3D1.0.0&registry=zookeeper&timestamp=1497094184777 
+		// url
+		// -->registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_consumer&dubbo=2.0.0&pid=48320&refer=application%3Dhello_consumer%26check%3Dfalse%26dubbo%3D2.0.0%26interface%3Dcn.com.sky.dubbo.server.service.DemoService%26loadbalance%3Drandom%26methods%3DgetUserById%2CaddUser%2CsayHello%26mock%3Dtrue%26pid%3D48320%26retries%3D5%26revision%3D1.0.0%26side%3Dconsumer%26timeout%3D15000%26timestamp%3D1497094162302%26version%3D1.0.0&registry=zookeeper&timestamp=1497094184777
 		url = url.setProtocol(url.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_REGISTRY)).removeParameter(Constants.REGISTRY_KEY);
-		
+
 		// 1、获取到注册中心的连接，并返回连接实例
-		//url -->zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_consumer&dubbo=2.0.0&pid=48320&refer=application%3Dhello_consumer%26check%3Dfalse%26dubbo%3D2.0.0%26interface%3Dcn.com.sky.dubbo.server.service.DemoService%26loadbalance%3Drandom%26methods%3DgetUserById%2CaddUser%2CsayHello%26mock%3Dtrue%26pid%3D48320%26retries%3D5%26revision%3D1.0.0%26side%3Dconsumer%26timeout%3D15000%26timestamp%3D1497094162302%26version%3D1.0.0&timestamp=1497094184777
+		// url
+		// -->zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_consumer&dubbo=2.0.0&pid=48320&refer=application%3Dhello_consumer%26check%3Dfalse%26dubbo%3D2.0.0%26interface%3Dcn.com.sky.dubbo.server.service.DemoService%26loadbalance%3Drandom%26methods%3DgetUserById%2CaddUser%2CsayHello%26mock%3Dtrue%26pid%3D48320%26retries%3D5%26revision%3D1.0.0%26side%3Dconsumer%26timeout%3D15000%26timestamp%3D1497094162302%26version%3D1.0.0&timestamp=1497094184777
 		Registry registry = registryFactory.getRegistry(url);
 		if (RegistryService.class.equals(type)) {
 			return proxyFactory.getInvoker((T) registry, type, url);
@@ -304,23 +336,29 @@ public class RegistryProtocol implements Protocol {
 		return ExtensionLoader.getExtensionLoader(Cluster.class).getExtension("mergeable");
 	}
 
+	// 消费者流程
 	private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
 		RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);
 		directory.setRegistry(registry);
 		directory.setProtocol(protocol);
-		//2、获取消费者url
-		//subscribeUrl-->consumer://192.168.2.9/cn.com.sky.dubbo.server.service.DemoService?application=hello_consumer&check=false&dubbo=2.0.0&interface=cn.com.sky.dubbo.server.service.DemoService&loadbalance=random&methods=addUser,getUserById,sayHello&mock=true&pid=44364&retries=5&revision=1.0.0&side=consumer&timeout=1500000&timestamp=1497097889171&version=1.0.0
+		// 2、获取消费者url
+		// subscribeUrl-->consumer://192.168.2.9/cn.com.sky.dubbo.server.service.DemoService?application=hello_consumer&check=false&dubbo=2.0.0&interface=cn.com.sky.dubbo.server.service.DemoService&loadbalance=random&methods=addUser,getUserById,sayHello&mock=true&pid=44364&retries=5&revision=1.0.0&side=consumer&timeout=1500000&timestamp=1497097889171&version=1.0.0
 		URL subscribeUrl = new URL(Constants.CONSUMER_PROTOCOL, NetUtils.getLocalHost(), 0, type.getName(), directory.getUrl().getParameters());
 		if (!Constants.ANY_VALUE.equals(url.getServiceInterface()) && url.getParameter(Constants.REGISTER_KEY, true)) {
-			//3、消费者注册到注册中心
+			// 3、消费者注册到注册中心
 			registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY, Constants.CHECK_KEY, String.valueOf(false)));
 		}
-		//4、订阅
+		/**
+		 * <pre>
+		 * 4、消费者订阅(流程很多，逻辑很复杂)
+		 * 订阅该service下的 providers,configurators,routers
+		 * consumer订阅该服务下的providers/routers/configurators
+		 */
 		directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY, Constants.PROVIDERS_CATEGORY + "," + Constants.CONFIGURATORS_CATEGORY + "," + Constants.ROUTERS_CATEGORY));
-		//5、加入到集群
-		//clustr-->MockClusterWrapper
+		// 5、加入到集群
+		// clustr-->MockClusterWrapper
 		// return MockClusterInvoker
-		return cluster.join(directory);
+		return cluster.join(directory);// com.alibaba.dubbo.registry.integration.RegistryDirectory@601ae9d
 	}
 
 	// 过滤URL中不需要输出的参数(以点号开头的)
@@ -347,8 +385,10 @@ public class RegistryProtocol implements Protocol {
 		bounds.clear();
 	}
 
-	/*
-	 * 重新export 1.protocol中的exporter destory问题1.要求registryprotocol返回的exporter可以正常destroy
+	/**
+	 * <pre>
+	 * 重新export 
+	 * 1.protocol中的exporter destory问题1.要求registryprotocol返回的exporter可以正常destroy
 	 * 2.notify后不需要重新向注册中心注册3.export 方法传入的invoker最好能一直作为exporter的invoker.
 	 */
 	private class OverrideListener implements NotifyListener {
@@ -361,17 +401,19 @@ public class RegistryProtocol implements Protocol {
 			this.subscribeUrl = subscribeUrl;
 		}
 
-		/*<pre>
-		 * provider 端可识别的override url只有这两种. override://0.0.0.0/serviceName?timeout=10
+		/**
+		 * <pre>
+		 * provider 端可识别的override url只有这两种. 
+		 * override://0.0.0.0/serviceName?timeout=10
 		 * override://0.0.0.0/?timeout=10
 		 * 
-		 * urls -->
-		 * [empty://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true
-		 * &application=hello_provider&category=configurators&check=false&dubbo=2.0.0&generic=false&interface=
-		 * cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=68260
-		 * &revision=1.0.0&side=provider&timestamp=1496905026515&version=1.0.0]
+		 * 
+		 * urls -->[empty://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&category=configurators&check=false&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=68260&revision=1.0.0&side=provider&timestamp=1496905026515&version=1.0.0]
+		 * 
+		 * 生产者provider的notify
 		 */
 		public void notify(List<URL> urls) {
+			// 1、从urls中移除不符合覆盖条件的覆盖url
 			List<URL> result = null;
 			for (URL url : urls) {
 				URL overrideUrl = url;
@@ -379,6 +421,7 @@ public class RegistryProtocol implements Protocol {
 					// 兼容旧版本
 					overrideUrl = url.addParameter(Constants.CATEGORY_KEY, Constants.CONFIGURATORS_CATEGORY);
 				}
+
 				if (!UrlUtils.isMatch(subscribeUrl, overrideUrl)) {
 					if (result == null) {
 						result = new ArrayList<URL>(urls);
@@ -390,12 +433,17 @@ public class RegistryProtocol implements Protocol {
 			if (result != null) {
 				urls = result;
 			}
+			// 2、将覆盖urls转换为configurators
 			this.configurators = RegistryDirectory.toConfigurators(urls);
-			//[com.alibaba.dubbo.registry.integration.RegistryProtocol$ExporterChangeableWrapper@f75527]
+
+			// 3、获取现在已经暴露的url，如果覆盖url和现有url不一致，则重新暴露服务。
 			List<ExporterChangeableWrapper<?>> exporters = new ArrayList<ExporterChangeableWrapper<?>>(bounds.values());
 			for (ExporterChangeableWrapper<?> exporter : exporters) {
-				// invoker -->
-				// registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_provider&dubbo=2.0.0&export=dubbo%3A%2F%2F10.69.61.196%3A20880%2Fcn.com.sky.dubbo.server.service.DemoService%3Fanyhost%3Dtrue%26application%3Dhello_provider%26dubbo%3D2.0.0%26generic%3Dfalse%26interface%3Dcn.com.sky.dubbo.server.service.DemoService%26methods%3DaddUser%2CgetUserById%2CsayHello%26pid%3D68260%26revision%3D1.0.0%26side%3Dprovider%26timestamp%3D1496905026515%26version%3D1.0.0&pid=68260&registry=zookeeper&timestamp=1496905025327
+				/**
+				 * <pre>
+				 * a、获取已暴露的invoker
+				 * invoker -->registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_provider&dubbo=2.0.0&export=dubbo%3A%2F%2F10.69.61.196%3A20880%2Fcn.com.sky.dubbo.server.service.DemoService%3Fanyhost%3Dtrue%26application%3Dhello_provider%26dubbo%3D2.0.0%26generic%3Dfalse%26interface%3Dcn.com.sky.dubbo.server.service.DemoService%26methods%3DaddUser%2CgetUserById%2CsayHello%26pid%3D68260%26revision%3D1.0.0%26side%3Dprovider%26timestamp%3D1496905026515%26version%3D1.0.0&pid=68260&registry=zookeeper&timestamp=1496905025327
+				 */
 				Invoker<?> invoker = exporter.getOriginInvoker();
 				final Invoker<?> originInvoker;
 				if (invoker instanceof InvokerDelegete) {
@@ -403,11 +451,16 @@ public class RegistryProtocol implements Protocol {
 				} else {
 					originInvoker = invoker;
 				}
-				// originUrl -->
-				// dubbo://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=68260&revision=1.0.0&side=provider&timestamp=1496905026515&version=1.0.0
+				/**
+				 * <pre>
+				 * b、获取已暴露的url
+				 * originUrl --> dubbo://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=68260&revision=1.0.0&side=provider&timestamp=1496905026515&version=1.0.0
+				 */
 				URL originUrl = RegistryProtocol.this.getProviderUrl(originInvoker);
+				// c、获取新的url
 				URL newUrl = getNewInvokerUrl(originUrl, urls);
 
+				// d、如果修改了url，需要重新export。
 				if (!originUrl.equals(newUrl)) {
 					RegistryProtocol.this.doChangeLocalExport(originInvoker, newUrl);
 				}

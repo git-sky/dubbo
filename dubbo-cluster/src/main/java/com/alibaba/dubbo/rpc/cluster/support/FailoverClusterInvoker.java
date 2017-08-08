@@ -53,6 +53,7 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
 	public Result doInvoke(Invocation invocation, final List<Invoker<T>> invokers, LoadBalance loadbalance) throws RpcException {
 		List<Invoker<T>> copyinvokers = invokers;
 		checkInvokers(copyinvokers, invocation);
+		//retries重试次数
 		int len = getUrl().getMethodParameter(invocation.getMethodName(), Constants.RETRIES_KEY, Constants.DEFAULT_RETRIES) + 1;
 		if (len <= 0) {
 			len = 1;
@@ -72,12 +73,12 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
 				// 重新检查一下
 				checkInvokers(copyinvokers, invocation);
 			}
-			// 选择一个invoker
+			//1、 选择一个invoker
 			Invoker<T> invoker = select(loadbalance, invocation, copyinvokers, invoked);
 			invoked.add(invoker);// 已经使用过的invoker
 			RpcContext.getContext().setInvokers((List) invoked);
 			try {
-				// 调用 invoke (DubboInvoker)
+				// 2、调用 invoke (DubboInvoker)
 				Result result = invoker.invoke(invocation);
 
 				if (le != null && logger.isWarnEnabled()) {

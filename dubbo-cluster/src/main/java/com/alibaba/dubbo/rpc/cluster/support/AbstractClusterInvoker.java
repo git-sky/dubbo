@@ -58,7 +58,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
 		if (directory == null)
 			throw new IllegalArgumentException("service directory == null");
 
-		this.directory = directory;
+		this.directory = directory;//com.alibaba.dubbo.registry.integration.RegistryDirectory@3730b195
 		// sticky 需要检测 avaliablecheck
 		this.availablecheck = url.getParameter(Constants.CLUSTER_AVAILABLE_CHECK_KEY, Constants.DEFAULT_CLUSTER_AVAILABLE_CHECK);
 	}
@@ -85,7 +85,9 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
 	}
 
 	/**
-	 * 使用loadbalance选择invoker.</br> a)先lb选择，如果在selected列表中 或者 不可用且做检验时，进入下一步(重选),否则直接返回</br>
+	 * <pre>
+	 * 使用loadbalance选择invoker.</br>
+	 * a)先lb选择，如果在selected列表中 或者 不可用且做检验时，进入下一步(重选),否则直接返回</br>
 	 * b)重选验证规则：selected > available .保证重选出的结果尽量不在select中，并且是可用的
 	 * 
 	 * @param availablecheck
@@ -131,12 +133,13 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
 			return selected.get(0) == invokers.get(0) ? invokers.get(1) : invokers.get(0);
 		}
 
-		// 负载策略选择 invoker
+		// 根据负载策略选择 invoker
 		Invoker<T> invoker = loadbalance.select(invokers, getUrl(), invocation);
 
 		// 如果 selected中包含（优先判断） 或者 不可用&&availablecheck=true 则重试.
 		if ((selected != null && selected.contains(invoker)) || (!invoker.isAvailable() && getUrl() != null && availablecheck)) {
 			try {
+				//重新选择
 				Invoker<T> rinvoker = reselect(loadbalance, invocation, invokers, selected, availablecheck);
 				if (rinvoker != null) {
 					invoker = rinvoker;

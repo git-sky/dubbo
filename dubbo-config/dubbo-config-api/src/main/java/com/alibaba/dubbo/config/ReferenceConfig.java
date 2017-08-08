@@ -389,7 +389,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 						}
 					}
 				}
-			} else { // 通过注册中心配置拼装URL
+			} else { // 通过注册中心的配置，拼装注册中心的URL
 				// us -->[registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_consumer&dubbo=2.0.0&pid=48320&registry=zookeeper&timestamp=1497094184777]
 				List<URL> us = loadRegistries(false);
 				if (us != null && us.size() > 0) {

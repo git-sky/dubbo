@@ -83,8 +83,9 @@ public class ZkclientZookeeperClient extends AbstractZookeeperClient<IZkChildLis
 			}
 		};
 	}
-
+	
 	public List<String> addTargetChildListener(String path, final IZkChildListener listener) {
+		//subscribeChildChanges实际上是通过exists和getChildren关注了两个事件。这样当create(“/path”)时，对应path上通过getChildren注册的listener也会被调用
 		return client.subscribeChildChanges(path, listener);
 	}
 
