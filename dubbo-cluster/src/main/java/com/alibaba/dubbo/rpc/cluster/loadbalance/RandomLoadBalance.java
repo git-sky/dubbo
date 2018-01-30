@@ -24,6 +24,8 @@ import com.alibaba.dubbo.rpc.Invoker;
 
 /**
  * random load balance.
+ * 
+ * 带权重的随机负载均衡
  *
  * @author qianlei
  * @author william.liangf

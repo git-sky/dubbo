@@ -34,6 +34,8 @@ public interface ProxyFactory {
 	/**
 	 * create proxy.
 	 * 
+	 * 消费者
+	 * 
 	 * @param invoker
 	 * @return proxy
 	 */
@@ -42,6 +44,8 @@ public interface ProxyFactory {
 
 	/**
 	 * create invoker.
+	 * 
+	 * 生产者
 	 * 
 	 * @param <T>
 	 * @param proxy

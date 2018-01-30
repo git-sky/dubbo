@@ -78,7 +78,7 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
 			invoked.add(invoker);// 已经使用过的invoker
 			RpcContext.getContext().setInvokers((List) invoked);
 			try {
-				// 2、调用 invoke (DubboInvoker)
+				// 2、调用 invoke (DubboInvoker)--InvokerDelegete
 				Result result = invoker.invoke(invocation);
 
 				if (le != null && logger.isWarnEnabled()) {

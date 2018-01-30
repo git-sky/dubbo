@@ -80,6 +80,7 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
 		inv.setAttachment(Constants.VERSION_KEY, version);
 
 		// 2、获取client链接
+		// 确定此次调用该使用哪个client（一个client代表一个connection）
 		ExchangeClient currentClient;
 		if (clients.length == 1) {
 			currentClient = clients[0];
@@ -94,10 +95,11 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
 			int timeout = getUrl().getMethodParameter(methodName, Constants.TIMEOUT_KEY, Constants.DEFAULT_TIMEOUT);// 超时时间，默认1秒
 			if (isOneway) {// a.单向调用
 				boolean isSent = getUrl().getMethodParameter(methodName, Constants.SENT_KEY, false);
+				// 单向调用只负责发送消息，不等待服务端应答，所以没有返回值
 				currentClient.send(inv, isSent);
 				RpcContext.getContext().setFuture(null);
 				return new RpcResult();
-			} else if (isAsync) {// b.异步调用
+			} else if (isAsync) {// b.异步调用 HeaderExchangeChannel
 				ResponseFuture future = currentClient.request(inv, timeout);
 				RpcContext.getContext().setFuture(new FutureAdapter<Object>(future));
 				return new RpcResult();

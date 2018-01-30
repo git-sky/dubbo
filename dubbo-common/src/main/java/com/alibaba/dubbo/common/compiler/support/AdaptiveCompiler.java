@@ -15,7 +15,6 @@
  */
 package com.alibaba.dubbo.common.compiler.support;
 
-
 import com.alibaba.dubbo.common.compiler.Compiler;
 import com.alibaba.dubbo.common.extension.Adaptive;
 import com.alibaba.dubbo.common.extension.ExtensionLoader;
@@ -23,28 +22,32 @@ import com.alibaba.dubbo.common.extension.ExtensionLoader;
 /**
  * AdaptiveCompiler. (SPI, Singleton, ThreadSafe)
  * 
+ * AdaptiveCompiler是Compiler的设配类，它有类注解@Adaptive表示这个Compiler的设配类(控制类)不是动态编译生成的。
+ * 
+ * AdaptiveCompiler作用就是策略的选择，根据条件选择何种编译策略来编译动态生成的源代码。
+ * 
  * @author william.liangf
  */
 @Adaptive
 public class AdaptiveCompiler implements Compiler {
 
-    private static volatile String DEFAULT_COMPILER;
+	private static volatile String DEFAULT_COMPILER;
 
-    public static void setDefaultCompiler(String compiler) {
-        DEFAULT_COMPILER = compiler;
-    }
+	public static void setDefaultCompiler(String compiler) {
+		DEFAULT_COMPILER = compiler;
+	}
 
-    public Class<?> compile(String code, ClassLoader classLoader) {
-        Compiler compiler;
-        ExtensionLoader<Compiler> loader = ExtensionLoader.getExtensionLoader(Compiler.class);
-        String name = DEFAULT_COMPILER; // copy reference
-        if (name != null && name.length() > 0) {
-            compiler = loader.getExtension(name);
-        } else {
-            compiler = loader.getDefaultExtension();
-        }
-        //compiler-->com.alibaba.dubbo.common.compiler.support.JavassistCompiler@4ee89ac7
-        return compiler.compile(code, classLoader);
-    }
+	public Class<?> compile(String code, ClassLoader classLoader) {
+		Compiler compiler;
+		ExtensionLoader<Compiler> loader = ExtensionLoader.getExtensionLoader(Compiler.class);
+		String name = DEFAULT_COMPILER; // copy reference
+		if (name != null && name.length() > 0) {
+			compiler = loader.getExtension(name);
+		} else {
+			compiler = loader.getDefaultExtension();
+		}
+		// compiler-->com.alibaba.dubbo.common.compiler.support.JavassistCompiler@4ee89ac7
+		return compiler.compile(code, classLoader);
+	}
 
 }

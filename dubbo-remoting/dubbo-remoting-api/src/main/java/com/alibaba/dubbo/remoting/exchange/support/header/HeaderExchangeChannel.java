@@ -100,7 +100,14 @@ final class HeaderExchangeChannel implements ExchangeChannel {
 	}
 
 	/**
+	 * <pre>
 	 * 同步/异步调用
+	 * 
+	 * 单一长连接与多线程并发的协作思路是：
+	 * 1）为每个请求初始化一个DefaultFuture对象，并且生成一个唯一的ID，
+	 * 2）将ID，future对象存入全局变量Map中；
+	 * 3）接受到响应后，取响应中的ID，在全局变量Map中查找对应的future对象；从而完成协作。
+	 * 
 	 */
 	public ResponseFuture request(Object request, int timeout) throws RemotingException {
 		if (closed) {
@@ -109,11 +116,12 @@ final class HeaderExchangeChannel implements ExchangeChannel {
 		// create request.
 		Request req = new Request();
 		req.setVersion("2.0.0");
-		req.setTwoWay(true);
+		req.setTwoWay(true); // 相比OneWay，同步和异步调用属于TwoWay
 		req.setData(request);
+		///这个future就是客户端并发请求线程阻塞的对象。创建DefaultFuture，用于将请求和应答关联起来
 		DefaultFuture future = new DefaultFuture(channel, req, timeout);// 获取返回结果用
 		try {
-			channel.send(req);
+			channel.send(req);// NettyChannel
 		} catch (RemotingException e) {
 			future.cancel();
 			throw e;

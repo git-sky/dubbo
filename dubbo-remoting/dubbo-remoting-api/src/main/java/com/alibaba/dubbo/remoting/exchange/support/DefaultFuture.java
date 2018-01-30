@@ -235,6 +235,9 @@ public class DefaultFuture implements ResponseFuture {
 		sent = System.currentTimeMillis();
 	}
 
+	/**
+	 * 通过id，DefaultFuture.FUTURES可以拿到具体的那个DefaultFuture对象，它就是上面我们提到的，阻塞请求线程的那个对象。
+	 */
 	public static void received(Channel channel, Response response) {
 		try {
 			DefaultFuture future = FUTURES.remove(response.getId());
@@ -254,7 +257,7 @@ public class DefaultFuture implements ResponseFuture {
 		try {
 			response = res;
 			if (done != null) {
-				done.signal();
+				done.signal();//唤醒上面get方法阻塞的线程。
 			}
 		} finally {
 			lock.unlock();

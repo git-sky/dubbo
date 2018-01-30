@@ -136,22 +136,26 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
 		invocation.setInvoker(this);
 
 		// 2、设置invocation自定义携带的数据
+		 // 填充接口参数
 		if (attachment != null && attachment.size() > 0) {
 			invocation.addAttachmentsIfAbsent(attachment);
 		}
+		 // 填充业务系统需要透传的参数
 		Map<String, String> context = RpcContext.getContext().getAttachments();
 		if (context != null) {
 			invocation.addAttachmentsIfAbsent(context);
 		}
+		  // 默认是同步调用，但也支持异步
 		if (getUrl().getMethodParameter(invocation.getMethodName(), Constants.ASYNC_KEY, false)) {
 			invocation.setAttachment(Constants.ASYNC_KEY, Boolean.TRUE.toString());
 		}
 
 		// 3、异步操作需要添加id，做幂等用。
+		//幂等操作:异步操作默认添加invocationid，它是一个自增的AtomicLong
 		RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
 
 		try {
-			// 4、调用
+			// 4、调用,执行具体的RPC操作
 			return doInvoke(invocation);
 		} catch (InvocationTargetException e) { // biz exception
 			Throwable te = e.getTargetException();

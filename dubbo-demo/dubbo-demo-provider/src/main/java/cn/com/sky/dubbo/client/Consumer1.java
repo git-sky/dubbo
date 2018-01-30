@@ -1,11 +1,9 @@
 package cn.com.sky.dubbo.client;
 
+import cn.com.sky.dubbo.server.service.DemoService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-
-import cn.com.sky.dubbo.client.service.HelloAction;
-import cn.com.sky.dubbo.server.service.DemoService;
 
 public class Consumer1 {
 	private static final Logger logger = LoggerFactory.getLogger(Consumer1.class);
@@ -34,11 +32,10 @@ public class Consumer1 {
 
 		DemoService demoService = (DemoService) context.getBean("demoService"); // 获取远程服务代理
 
-
 		long begin = System.currentTimeMillis();
-		System.out.println("begin:" + begin);
-		while (true) {
-			String result = demoService.sayHello("world"); // 执行远程方法
+		System.out.println("begin:" + begin); 
+		for (int i = 0; i < 100; i++) {
+			String result = demoService.sayHello("world"+i); // 执行远程方法
 			System.out.println("end:" + (System.currentTimeMillis() - begin));
 			System.out.println(result); // 显示调用结果
 		}

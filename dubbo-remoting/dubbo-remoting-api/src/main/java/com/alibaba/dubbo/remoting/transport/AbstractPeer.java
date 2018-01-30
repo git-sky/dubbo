@@ -115,7 +115,7 @@ public abstract class AbstractPeer implements Endpoint, ChannelHandler {
         }
         handler.sent(ch, msg);
     }
-
+    //如果服务已经关闭，则返回，否则调用下一个Handler来处理。
     public void received(Channel ch, Object msg) throws RemotingException {
         if (closed) {
             return;

@@ -63,13 +63,19 @@ public class NettyServer extends AbstractServer implements Server {
 		super(url, ChannelHandlers.wrap(handler, ExecutorUtil.setThreadName(url, SERVER_THREAD_POOL_NAME)));
 	}
 
+	/**
+	 * 当Dubbo将Spring容器中的服务实例做了动态代理的处理后，就会通过NettyServer#doOpen来暴露服务端口，再接着将服务注册到注册中心。
+	 */
 	@Override
 	protected void doOpen() throws Throwable {
 		NettyHelper.setNettyLoggerFactory();
 		// boss线程池
+		// 无界的Netty boss线程池，负责和消费者建立新的连接
 		ExecutorService boss = Executors.newCachedThreadPool(new NamedThreadFactory("NettyServerBoss", true));
 		// worker线程池
+		// 无界的Netty worker线程池，负责连接的数据交换
 		ExecutorService worker = Executors.newCachedThreadPool(new NamedThreadFactory("NettyServerWorker", true));
+		//TODO 这个是IO处理线程池
 		ChannelFactory channelFactory = new NioServerSocketChannelFactory(boss, worker, getUrl().getPositiveParameter(Constants.IO_THREADS_KEY, Constants.DEFAULT_IO_THREADS));
 		bootstrap = new ServerBootstrap(channelFactory);
 

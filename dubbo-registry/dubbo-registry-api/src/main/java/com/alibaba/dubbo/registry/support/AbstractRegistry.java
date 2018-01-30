@@ -409,6 +409,9 @@ public abstract class AbstractRegistry implements Registry {
 		}
 	}
 
+	/**
+	 * 配置变更时的具体的覆盖逻辑。
+	 */
 	protected void notify(URL url, NotifyListener listener, List<URL> urls) {
 		if (url == null) {
 			throw new IllegalArgumentException("notify url == null");
@@ -466,7 +469,7 @@ public abstract class AbstractRegistry implements Registry {
 			List<URL> categoryList = entry.getValue();
 			categoryNotified.put(category, categoryList);// {configurators=[empty://10.69.61.132:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&category=configurators&check=false&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=19244&revision=1.0.0&scope=remote&side=provider&timestamp=1501566695232&version=1.0.0]}
 
-			// b、写入本地缓存
+			// b、最新配置写入本地缓存
 			saveProperties(url);
 
 			// c、更新覆盖url

@@ -21,7 +21,7 @@ public class MultiMessageHandler extends AbstractChannelHandlerDelegate {
     public void received(Channel channel, Object message) throws RemotingException {
         if (message instanceof MultiMessage) {
             MultiMessage list = (MultiMessage)message;
-            for(Object obj : list) {
+            for(Object obj : list) {//如果是批量请求，则依次对请求调用下一个Handler来处理。
                 handler.received(channel, obj);
             }
         } else {

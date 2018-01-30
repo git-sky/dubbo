@@ -82,6 +82,9 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
 	private final List<URL> urls = new ArrayList<URL>();
 
+	/**
+	 * 这个是干嘛用的？ TODO
+	 */
 	private final List<Exporter<?>> exporters = new ArrayList<Exporter<?>>();
 
 	private transient volatile boolean exported;

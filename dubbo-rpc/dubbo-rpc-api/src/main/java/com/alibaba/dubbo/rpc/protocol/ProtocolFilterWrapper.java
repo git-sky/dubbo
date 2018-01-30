@@ -48,6 +48,9 @@ public class ProtocolFilterWrapper implements Protocol {
 		return protocol.getDefaultPort();
 	}
 
+	/**
+	 * 生产者provider暴露服务
+	 */
 	public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
 		if (Constants.REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
 			// protocol-->com.alibaba.dubbo.rpc.protocol.ProtocolListenerWrapper@43e3cae(com.alibaba.dubbo.registry.integration.RegistryProtocol@5602c43c)
@@ -57,6 +60,9 @@ public class ProtocolFilterWrapper implements Protocol {
 		return protocol.export(buildInvokerChain(invoker, Constants.SERVICE_FILTER_KEY, Constants.PROVIDER));
 	}
 
+	/**
+	 * 消费者consumer引用服务
+	 */
 	public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
 		if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
 			//protocol-->com.alibaba.dubbo.registry.integration.RegistryProtocol@99a6a17

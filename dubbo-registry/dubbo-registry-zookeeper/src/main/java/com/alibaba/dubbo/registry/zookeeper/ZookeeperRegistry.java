@@ -94,7 +94,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
 	}
 
 	/**
-	 * zk的dubbo节点下创建url节点（provider，consumer）。
+	 * zk的dubbo节点下创建url节点（provider，consumer,configurators）。
 	 */
 	protected void doRegister(URL url) {
 		try {
@@ -155,6 +155,9 @@ public class ZookeeperRegistry extends FailbackRegistry {
 				 * url -->provider://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&category=configurators&check=false&dubbo=2.0.0&generic =false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=68260&revision=1.0.0&side=provider&timestamp=1496905026515&version=1.0.0
 				 * path -->/dubbo/cn.com.sky.dubbo.server.service.DemoService/configurators
 				 * 
+				 * consumer://10.69.58.75/cn.com.sky.dubbo.server.service.DemoService?application=hello_consumer&category=providers,configurators,routers&check=false&dubbo=2.0.0&interface=cn.com.sky.dubbo.server.service.DemoService&loadbalance=random&methods=getUserById,addUser,sayHello&pid=27020&retries=5&revision=1.0.0&side=consumer&timeout=1500000&timestamp=1504765339610&version=1.0.0
+				 * /dubbo/cn.com.sky.dubbo.server.service.DemoService/providers
+				 * 
 				 * 这里toCategoriesPath(url)返回的是一个该服务下routers等zk路径
 				 */
 				for (String path : toCategoriesPath(url)) {
@@ -168,8 +171,9 @@ public class ZookeeperRegistry extends FailbackRegistry {
 					if (zkListener == null) {
 						listeners.putIfAbsent(listener, new ChildListener() {
 							public void childChanged(String parentPath, List<String> currentChilds) {
+								List<URL> urlsWithEmpty = toUrlsWithEmpty(url, parentPath, currentChilds);
 								// 这里会监听节点的变化
-								ZookeeperRegistry.this.notify(url, listener, toUrlsWithEmpty(url, parentPath, currentChilds));
+								ZookeeperRegistry.this.notify(url, listener, urlsWithEmpty);
 							}
 						});
 						zkListener = listeners.get(listener);
@@ -188,9 +192,10 @@ public class ZookeeperRegistry extends FailbackRegistry {
 					if (children != null) {
 						// 如果该path下的数据为空，那么返回empty://协议开头，暂时不知是何用意
 						// 注意：这里已经根据group等过滤过了
-						urls.addAll(toUrlsWithEmpty(url, path, children));
+						List<URL> urlsWithEmpty = toUrlsWithEmpty(url, path, children);
+						urls.addAll(urlsWithEmpty);
 					}
-				}
+				}// end for
 
 				/**
 				 * <pre>
@@ -265,10 +270,12 @@ public class ZookeeperRegistry extends FailbackRegistry {
 		return toRootDir() + URL.encode(name);
 	}
 
-	// paths(provider)-->[/dubbo/cn.com.sky.dubbo.server.service.DemoService/configurators]
-	// paths(consumer)-->[/dubbo/cn.com.sky.dubbo.server.service.DemoService/providers,
-	// /dubbo/cn.com.sky.dubbo.server.service.DemoService/configurators,
-	// /dubbo/cn.com.sky.dubbo.server.service.DemoService/routers]
+	/**
+	 * <pre>
+	 * paths(provider)-->[/dubbo/cn.com.sky.dubbo.server.service.DemoService/configurators]
+	 * paths(consumer)-->[/dubbo/cn.com.sky.dubbo.server.service.DemoService/providers,/dubbo/cn.com.sky.dubbo.server.service.DemoService/configurators,/dubbo/cn.com.sky.dubbo.server.service.DemoService/routers]
+	 * 
+	 * */
 	private String[] toCategoriesPath(URL url) {
 		String[] categroies;
 		if (Constants.ANY_VALUE.equals(url.getParameter(Constants.CATEGORY_KEY))) {

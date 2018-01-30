@@ -27,30 +27,38 @@ import com.alibaba.dubbo.common.extension.ExtensionLoader;
  * AdaptiveExtensionFactory
  * 
  * @author william.liangf
+ * 
+ *         默认的ExtensionFactory实现中，AdaptiveExtensionFactotry被@Adaptive注解注释，
+ *         也就是它就是ExtensionFactory对应的自适应扩展实现
+ *         (每个扩展点最多只能有一个自适应实现，如果所有实现中没有被@Adaptive注释的，那么dubbo会动态生成一个自适应实现类
+ *         )，也就是说，所有对ExtensionFactory调用的地方，实际上调用的都是AdpativeExtensionFactory
+ * 
  */
 @Adaptive
 public class AdaptiveExtensionFactory implements ExtensionFactory {
-    
-    private final List<ExtensionFactory> factories;
-    
-    public AdaptiveExtensionFactory() {
-        ExtensionLoader<ExtensionFactory> loader = ExtensionLoader.getExtensionLoader(ExtensionFactory.class);
-        List<ExtensionFactory> list = new ArrayList<ExtensionFactory>();
-        //[spi,spring]
-        for (String name : loader.getSupportedExtensions()) {
-            list.add(loader.getExtension(name));
-        }
-        factories = Collections.unmodifiableList(list);
-    }
 
-    public <T> T getExtension(Class<T> type, String name) {
-        for (ExtensionFactory factory : factories) {
-            T extension = factory.getExtension(type, name);
-            if (extension != null) {
-                return extension;
-            }
-        }
-        return null;
-    }
+	private final List<ExtensionFactory> factories;
+
+	public AdaptiveExtensionFactory() {
+		ExtensionLoader<ExtensionFactory> loader = ExtensionLoader.getExtensionLoader(ExtensionFactory.class);
+		List<ExtensionFactory> list = new ArrayList<ExtensionFactory>();
+		// [spi,spring]
+		for (String name : loader.getSupportedExtensions()) {
+			list.add(loader.getExtension(name)); // 将所有ExtensionFactory实现保存起来.
+		}
+		factories = Collections.unmodifiableList(list);
+	}
+
+	public <T> T getExtension(Class<T> type, String name) {
+		// 依次遍历各个ExtensionFactory实现的getExtension方法，一旦获取到Extension即返回
+		// 如果遍历完所有的ExtensionFactory实现均无法找到Extension,则返回null
+		for (ExtensionFactory factory : factories) {
+			T extension = factory.getExtension(type, name);
+			if (extension != null) {
+				return extension;
+			}
+		}
+		return null;
+	}
 
 }

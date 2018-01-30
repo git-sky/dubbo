@@ -41,6 +41,9 @@ public abstract class AbstractProtocol implements Protocol {
 
 	protected final Logger logger = LoggerFactory.getLogger(getClass());
 
+	/**
+	 * TODO 暴露的服务放到了这里!!!
+	 */
 	protected final Map<String, Exporter<?>> exporterMap = new ConcurrentHashMap<String, Exporter<?>>();
 
 	//TODO SOFEREFENCE

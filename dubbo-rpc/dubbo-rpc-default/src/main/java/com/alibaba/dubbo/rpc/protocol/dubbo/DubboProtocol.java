@@ -78,11 +78,15 @@ public class DubboProtocol extends AbstractProtocol {
 
 	private static final String IS_CALLBACK_SERVICE_INVOKE = "_isCallBackServiceInvoke";
 
+	/**
+	 * TODO 实际进行收发消息的handler，该类才是真正与客户端通信。
+	 */
 	private ExchangeHandler requestHandler = new ExchangeHandlerAdapter() {
-
+		//服务端处理数据，并返回结果。
 		public Object reply(ExchangeChannel channel, Object message) throws RemotingException {
 			if (message instanceof Invocation) {
 				Invocation inv = (Invocation) message;
+				   // 根据请求参数来选择Invoker
 				Invoker<?> invoker = getInvoker(channel, inv);
 				// 如果是callback 需要处理高版本调用低版本的问题
 				if (Boolean.TRUE.toString().equals(inv.getAttachments().get(IS_CALLBACK_SERVICE_INVOKE))) {
@@ -210,8 +214,10 @@ public class DubboProtocol extends AbstractProtocol {
 			path = inv.getAttachments().get(Constants.PATH_KEY) + "." + inv.getAttachments().get(Constants.CALLBACK_SERVICE_KEY);
 			inv.getAttachments().put(IS_CALLBACK_SERVICE_INVOKE, Boolean.TRUE.toString());
 		}
+		// 服务调用key--> serviceGroup/serviceName:serviceVersion:port
 		String serviceKey = serviceKey(port, path, inv.getAttachments().get(Constants.VERSION_KEY), inv.getAttachments().get(Constants.GROUP_KEY));
 
+		// 通过服务调用key找到对应的DubboExporter对象，exporterMap中是每个接口对应一个DubboExporter
 		DubboExporter<?> exporter = (DubboExporter<?>) exporterMap.get(serviceKey);
 
 		if (exporter == null)
@@ -357,17 +363,19 @@ public class DubboProtocol extends AbstractProtocol {
 		// 是否共享连接
 		boolean service_share_connect = false;
 		int connections = url.getParameter(Constants.CONNECTIONS_KEY, 0);
-		// 如果connections不配置，则共享连接，否则每服务每连接
+		// 如果connections不配置，则共享连接，否则每服务每连接。
 		if (connections == 0) {
 			service_share_connect = true;
 			connections = 1;
 		}
-
+		// 一个client维护一个connection
 		ExchangeClient[] clients = new ExchangeClient[connections];
 		for (int i = 0; i < clients.length; i++) {
 			if (service_share_connect) {
+				// 使用共享的TCP长连接
 				clients[i] = getSharedClient(url);// 获取共享连接
 			} else {
+				 // 单独为该URL建立TCP长连接
 				clients[i] = initClient(url);// 获取连接
 			}
 		}

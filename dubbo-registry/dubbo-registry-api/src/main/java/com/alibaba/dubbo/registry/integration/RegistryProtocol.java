@@ -193,10 +193,12 @@ public class RegistryProtocol implements Protocol {
 	// 交给具体的协议进行服务暴露（例如DubboProtocol）
 	@SuppressWarnings("unchecked")
 	private <T> ExporterChangeableWrapper<T> doLocalExport(final Invoker<T> originInvoker) {
-		// originInvoker -->
-		// registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_provider&dubbo=2.0.0&export=dubbo%3A%2F%2F10.69.61.196%3A20880%2Fcn.com.sky.dubbo.server.service.DemoService%3Fanyhost%3Dtrue%26application%3Dhello_provider%26dubbo%3D2.0.0%26generic%3Dfalse%26interface%3Dcn.com.sky.dubbo.server.service.DemoService%26methods%3DaddUser%2CgetUserById%2CsayHello%26pid%3D65388%26revision%3D1.0.0%26side%3Dprovider%26timestamp%3D1496900761500%26version%3D1.0.0&pid=65388&registry=zookeeper&timestamp=1496900761339
-		// key -->
-		// dubbo://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=65388&revision=1.0.0&side=provider&timestamp=1496900761500&version=1.0.0
+
+		/**
+		 * <pre>
+		 * originInvoker -->registry://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_provider&dubbo=2.0.0&export=dubbo%3A%2F%2F10.69.61.196%3A20880%2Fcn.com.sky.dubbo.server.service.DemoService%3Fanyhost%3Dtrue%26application%3Dhello_provider%26dubbo%3D2.0.0%26generic%3Dfalse%26interface%3Dcn.com.sky.dubbo.server.service.DemoService%26methods%3DaddUser%2CgetUserById%2CsayHello%26pid%3D65388%26revision%3D1.0.0%26side%3Dprovider%26timestamp%3D1496900761500%26version%3D1.0.0&pid=65388&registry=zookeeper&timestamp=1496900761339
+		 * key --> dubbo://10.69.61.196:20880/cn.com.sky.dubbo.server.service.DemoService?anyhost=true&application=hello_provider&dubbo=2.0.0&generic=false&interface=cn.com.sky.dubbo.server.service.DemoService&methods=addUser,getUserById,sayHello&pid=65388&revision=1.0.0&side=provider&timestamp=1496900761500&version=1.0.0
+		 */
 		String key = getCacheKey(originInvoker);
 		ExporterChangeableWrapper<T> exporter = (ExporterChangeableWrapper<T>) bounds.get(key);
 		if (exporter == null) {
@@ -353,8 +355,11 @@ public class RegistryProtocol implements Protocol {
 		 * 4、消费者订阅(流程很多，逻辑很复杂)
 		 * 订阅该service下的 providers,configurators,routers
 		 * consumer订阅该服务下的providers/routers/configurators
+		 * 
+		 * consumer://10.69.58.75/cn.com.sky.dubbo.server.service.DemoService?application=hello_consumer&category=providers,configurators,routers&check=false&dubbo=2.0.0&interface=cn.com.sky.dubbo.server.service.DemoService&loadbalance=random&methods=getUserById,addUser,sayHello&pid=27020&retries=5&revision=1.0.0&side=consumer&timeout=1500000&timestamp=1504765339610&version=1.0.0
 		 */
-		directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY, Constants.PROVIDERS_CATEGORY + "," + Constants.CONFIGURATORS_CATEGORY + "," + Constants.ROUTERS_CATEGORY));
+		URL subUrl=subscribeUrl.addParameter(Constants.CATEGORY_KEY, Constants.PROVIDERS_CATEGORY + "," + Constants.CONFIGURATORS_CATEGORY + "," + Constants.ROUTERS_CATEGORY);
+		directory.subscribe(subUrl);
 		// 5、加入到集群
 		// clustr-->MockClusterWrapper
 		// return MockClusterInvoker

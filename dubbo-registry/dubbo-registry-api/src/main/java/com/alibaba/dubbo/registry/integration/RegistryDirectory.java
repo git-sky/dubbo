@@ -55,6 +55,8 @@ import com.alibaba.dubbo.rpc.support.RpcUtils;
 /**
  * RegistryDirectory
  * 
+ * RegistryDirectory 继承了 NotifyListener， 这个 NotifyListener 中的 notify 方法就是注册中心的回调,也就是它之所以能根据注册中心动态变化的根源所在.
+ * 
  * @author william.liangf
  * @author chao.liuc
  */
@@ -98,11 +100,20 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 	private volatile Map<String, Invoker<T>> urlInvokerMap; // 初始为null以及中途可能被赋为null，请使用局部变量引用
 
 	// Map<methodName, Invoker> cache service method to invokers mapping.
+	//引用的服务所在地<key,invoker>
 	private volatile Map<String, List<Invoker<T>>> methodInvokerMap; // 初始为null以及中途可能被赋为null，请使用局部变量引用
 
 	// Set<invokerUrls> cache invokeUrls to invokers mapping.
 	private volatile Set<URL> cachedInvokerUrls; // 初始为null以及中途可能被赋为null，请使用局部变量引用
 
+	/**
+	 * <pre>
+	 * 
+	 * interface cn.com.sky.dubbo.server.service.DemoService
+	 * 
+	 * zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_consumer&dubbo=2.0.0&pid=27020&refer=application%3Dhello_consumer%26check%3Dfalse%26dubbo%3D2.0.0%26interface%3Dcn.com.sky.dubbo.server.service.DemoService%26loadbalance%3Drandom%26methods%3DgetUserById%2CaddUser%2CsayHello%26pid%3D27020%26retries%3D5%26revision%3D1.0.0%26side%3Dconsumer%26timeout%3D1500000%26timestamp%3D1504765339610%26version%3D1.0.0&timestamp=1504765413648
+	 * 
+	 */
 	public RegistryDirectory(Class<T> serviceType, URL url) {
 		super(url);
 		if (serviceType == null)
@@ -191,10 +202,10 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 		}
 		List<Configurator> localConfigurators = this.configurators; // local reference
 		// 合并override参数
-		this.overrideDirectoryUrl = directoryUrl;// zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_consumer&check=false&dubbo=2.0.0&interface=cn.com.sky.dubbo.server.service.DemoService&loadbalance=random&methods=addUser,getUserById,sayHello&mock=true&pid=27604&retries=5&revision=1.0.0&side=consumer&timeout=1500000&timestamp=1501654906417&version=1.0.0
+		this.overrideDirectoryUrl = directoryUrl;//原始url--》 zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=hello_consumer&check=false&dubbo=2.0.0&interface=cn.com.sky.dubbo.server.service.DemoService&loadbalance=random&methods=addUser,getUserById,sayHello&mock=true&pid=27604&retries=5&revision=1.0.0&side=consumer&timeout=1500000&timestamp=1501654906417&version=1.0.0
 		if (localConfigurators != null && localConfigurators.size() > 0) {
 			for (Configurator configurator : localConfigurators) {
-				this.overrideDirectoryUrl = configurator.configure(overrideDirectoryUrl);
+				this.overrideDirectoryUrl = configurator.configure(overrideDirectoryUrl);//增加configurator配置后的url
 			}
 		}
 		// consumer:
@@ -236,6 +247,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 				logger.error(new IllegalStateException("urls to invokers error .invokerUrls.size :" + invokerUrls.size() + ", invoker.size :0. urls :" + invokerUrls.toString()));
 				return;
 			}
+			//TODO methodInvokerMap 存放所有的invoker
 			this.methodInvokerMap = multiGroup ? toMergeMethodInvokerMap(newMethodInvokerMap) : newMethodInvokerMap;
 			this.urlInvokerMap = newUrlInvokerMap;
 			try {
@@ -404,7 +416,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 						enabled = url.getParameter(Constants.ENABLED_KEY, true);
 					}
 					if (enabled) {
-						// protocol-->
+						// 重新refer。。。
 						invoker = new InvokerDelegete<T>(protocol.refer(serviceType, url), url, providerUrl);
 					}
 				} catch (Throwable t) {

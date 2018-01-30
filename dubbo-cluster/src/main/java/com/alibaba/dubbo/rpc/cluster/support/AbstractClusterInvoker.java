@@ -58,7 +58,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
 		if (directory == null)
 			throw new IllegalArgumentException("service directory == null");
 
-		this.directory = directory;//com.alibaba.dubbo.registry.integration.RegistryDirectory@3730b195
+		this.directory = directory;// com.alibaba.dubbo.registry.integration.RegistryDirectory@3730b195
 		// sticky 需要检测 avaliablecheck
 		this.availablecheck = url.getParameter(Constants.CLUSTER_AVAILABLE_CHECK_KEY, Constants.DEFAULT_CLUSTER_AVAILABLE_CHECK);
 	}
@@ -93,7 +93,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
 	 * @param availablecheck
 	 *            如果设置true，在选择的时候先选invoker.available == true
 	 * @param selected
-	 *            已选过的invoker.注意：输入保证不重复
+	 * 已选过的invoker.注意：输入保证不重复
 	 * 
 	 */
 	protected Invoker<T> select(LoadBalance loadbalance, Invocation invocation, List<Invoker<T>> invokers, List<Invoker<T>> selected) throws RpcException {
@@ -101,6 +101,12 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
 			return null;
 		String methodName = invocation == null ? "" : invocation.getMethodName();
 
+		/**
+		 * <pre>
+		 * 首先从url获取开关sticky，表示集群是否开启粘滞功能。
+		 * 如果开关打开，并且缓存了正确的invoker，则直接返回stickyInvoker.
+		 * 否则，正常走后面逻辑。在sticky开关打开的情况下，对stickyInvoker赋新值。
+		 */
 		boolean sticky = invokers.get(0).getUrl().getMethodParameter(methodName, Constants.CLUSTER_STICKY_KEY, Constants.DEFAULT_CLUSTER_STICKY);
 		{
 			// ignore overloaded method
@@ -128,7 +134,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
 			return null;
 		if (invokers.size() == 1)
 			return invokers.get(0);
-		// 如果只有两个invoker，退化成轮循
+		// 如果只有两个invoker，退化成轮循(变成了：1-2-1-2-1...)
 		if (invokers.size() == 2 && selected != null && selected.size() > 0) {
 			return selected.get(0) == invokers.get(0) ? invokers.get(1) : invokers.get(0);
 		}
@@ -139,7 +145,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
 		// 如果 selected中包含（优先判断） 或者 不可用&&availablecheck=true 则重试.
 		if ((selected != null && selected.contains(invoker)) || (!invoker.isAvailable() && getUrl() != null && availablecheck)) {
 			try {
-				//重新选择
+				// 重新选择
 				Invoker<T> rinvoker = reselect(loadbalance, invocation, invokers, selected, availablecheck);
 				if (rinvoker != null) {
 					invoker = rinvoker;
@@ -220,7 +226,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
 
 		LoadBalance loadbalance;
 
-		// 1、获取所有的invokers（DubboInvoker）
+		// 1、获取所有的正常的invokers（DubboInvoker）--InvokerDelegete
 		List<Invoker<T>> invokers = list(invocation);
 
 		// 2、选择负载均衡策略
@@ -251,9 +257,9 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
 
 	protected void checkInvokers(List<Invoker<T>> invokers, Invocation invocation) {
 		if (invokers == null || invokers.size() == 0) {
-			throw new RpcException("Failed to invoke the method " + invocation.getMethodName() + " in the service " + getInterface().getName()
-					+ ". No provider available for the service " + directory.getUrl().getServiceKey() + " from registry " + directory.getUrl().getAddress() + " on the consumer "
-					+ NetUtils.getLocalHost() + " using the dubbo version " + Version.getVersion() + ". Please check if the providers have been started and registered.");
+			throw new RpcException("Failed to invoke the method " + invocation.getMethodName() + " in the service " + getInterface().getName() + ". No provider available for the service "
+					+ directory.getUrl().getServiceKey() + " from registry " + directory.getUrl().getAddress() + " on the consumer " + NetUtils.getLocalHost() + " using the dubbo version "
+					+ Version.getVersion() + ". Please check if the providers have been started and registered.");
 		}
 	}
 

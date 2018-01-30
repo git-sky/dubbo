@@ -181,8 +181,11 @@ public abstract class AbstractServer extends AbstractEndpoint implements Server 
 
     @Override
     public void connected(Channel ch) throws RemotingException {
+    	/**
+    	 * 消费者和提供者建立的每一个TCP连接都放到了NettyHandler的channels中。
+    	 */
         Collection<Channel> channels = getChannels();
-        if (accepts > 0 && channels.size() > accepts) {
+        if (accepts > 0 && channels.size() > accepts) {//检查新添加channel后是否会超出提供者配置的accepts配置，如果超出，则直接打印错误日志并关闭该Channel，这样的话消费者端自然会收到连接中断的异常信息
             logger.error("Close channel " + ch + ", cause: The server " + ch.getLocalAddress() + " connections greater than max config " + accepts);
             ch.close();
             return;
